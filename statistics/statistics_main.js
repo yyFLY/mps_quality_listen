@@ -110,7 +110,7 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 			res.data = returnData;
 			break;
 		default :
-			fs.readFile(config.html_path+path, "binary", function (err, data) {
+			fs.readFile(config.html_path+path, "binary", function (err, data) {			
 				if (err) {
 					log.warn('unkown path:'+path+', req_ip:'+req_ip);
 					callback({

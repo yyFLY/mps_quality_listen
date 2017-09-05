@@ -7,14 +7,16 @@ var summary = function(){
 			// "app" : {
 			// 	"stream" : {
 			// 		sum : 0,
-			// 		fluency : 0
+			// 		fluency : 0,
+			//		data:{}
 			// 	}
 			// }
 	}//统计每分钟rtmp的流畅度 按app stream查询
 	self.rtmp_history_flu_summary = {	// "appname":{
 		// 	"streamname":{
 		// 		times :[123,4234],
-		// 		flu :[100,100]
+		// 		flu :[100,100],
+		//		sum:[]
 		// 	}
 		// }
 	};
@@ -24,7 +26,8 @@ var summary = function(){
 
 	self.rtmp_summary_mintiue_sum = {
 		sum : 0,
-		flu : 0	
+		flu : 0	,
+		data:[]
 	};
 	self.rtmp_history_flu_summary_sum = [
 		// {
@@ -36,7 +39,8 @@ var summary = function(){
 
 	self.hls_summary_mintiue_sum = {
 		sum : 0,
-		flu : 0	
+		flu : 0	,
+		data:[]
 	};
 	self.hls_history_flu_summary_sum = [];
 
@@ -50,12 +54,15 @@ var summary = function(){
 	self.hls_history_flu_summary_hour = {};
 	self.rtmp_summary_hour_sum = {
 		sum : 0,
-		flu : 0	
+		flu : 0	,
+		data:[]
+
 	};
 	self.rtmp_history_flu_summary_sum_hour = [];
 	self.hls_summary_hour_sum = {
 		sum : 0,
-		flu : 0	
+		flu : 0	,
+		data:[]
 	};
 	self.hls_history_flu_summary_sum_hour = [];
 
@@ -64,29 +71,35 @@ var summary = function(){
 			self.rtmp_summary_minitue[data.App] = self.rtmp_summary_minitue[data.App] || {};
 			self.rtmp_summary_minitue[data.App][data.Stream] = self.rtmp_summary_minitue[data.App][data.Stream]  || {
 				sum : 0,
-				flu : 0
+				flu : 0,
+				data : []
 			};
 			self.rtmp_summary_minitue[data.App][data.Stream].sum += 1;
 			self.rtmp_summary_minitue[data.App][data.Stream].flu += parseFloat(data.Fluency);
+			self.rtmp_summary_minitue[data.App][data.Stream].data.push(data);
 		}
 		if(data.App && data.Stream && data.Fluency !== undefined && data.ProtocolType == 'hls'){
 			self.hls_summary_minitue[data.App] = self.hls_summary_minitue[data.App] || {};
 			self.hls_summary_minitue[data.App][data.Stream] = self.hls_summary_minitue[data.App][data.Stream]  || {
 				sum : 0,
-				flu : 0
+				flu : 0,
+				data : []
 			};
 			self.hls_summary_minitue[data.App][data.Stream].sum += 1;
 			self.hls_summary_minitue[data.App][data.Stream].flu += parseFloat(data.Fluency);
+			self.hls_summary_minitue[data.App][data.Stream].data.push(data);
 		}
 
 		if(data.Fluency !== undefined  && data.ProtocolType == 'rtmp'){			
 			self.rtmp_summary_mintiue_sum.sum += 1;
-			self.rtmp_summary_mintiue_sum.flu += parseFloat(data.Fluency);
+			self.rtmp_summary_mintiue_sum.flu += parseFloat(data.Fluency);	
+			self.rtmp_summary_mintiue_sum.data.push(data);		
 		}
 
 		if(data.Fluency !== undefined  && data.ProtocolType == 'hls'){			
 			self.hls_summary_mintiue_sum.sum += 1;
 			self.hls_summary_mintiue_sum.flu += parseFloat(data.Fluency);
+			self.hls_summary_mintiue_sum.data.push(data);	
 		}	
 
 		//每月的
@@ -95,29 +108,35 @@ var summary = function(){
 			self.rtmp_summary_hour[data.App] = self.rtmp_summary_hour[data.App] || {};
 			self.rtmp_summary_hour[data.App][data.Stream] = self.rtmp_summary_hour[data.App][data.Stream]  || {
 				sum : 0,
-				flu : 0
+				flu : 0,
+				data : []
 			};
 			self.rtmp_summary_hour[data.App][data.Stream].sum += 1;
 			self.rtmp_summary_hour[data.App][data.Stream].flu += parseFloat(data.Fluency);
+			self.rtmp_summary_hour[data.App][data.Stream].data.push(data);
 		}
 		if(data.App && data.Stream && data.Fluency !== undefined && data.ProtocolType == 'hls'){
 			self.hls_summary_hour[data.App] = self.hls_summary_hour[data.App] || {};
 			self.hls_summary_hour[data.App][data.Stream] = self.hls_summary_hour[data.App][data.Stream]  || {
 				sum : 0,
-				flu : 0
+				flu : 0,
+				data : []
 			};
 			self.hls_summary_hour[data.App][data.Stream].sum += 1;
 			self.hls_summary_hour[data.App][data.Stream].flu += parseFloat(data.Fluency);
+			self.hls_summary_hour[data.App][data.Stream].data.push(data);
 		}
 
 		if(data.Fluency !== undefined  && data.ProtocolType == 'rtmp'){			
 			self.rtmp_summary_hour_sum.sum += 1;
-			self.rtmp_summary_hour_sum.flu += parseFloat(data.Fluency);
+			self.rtmp_summary_hour_sum.flu += parseFloat(data.Fluency);			
+			self.rtmp_summary_hour_sum.data.push(data);
 		}
 
 		if(data.Fluency !== undefined  && data.ProtocolType == 'hls'){			
 			self.hls_summary_hour_sum.sum += 1;
-			self.hls_summary_hour_sum.flu += parseFloat(data.Fluency);
+			self.hls_summary_hour_sum.flu += parseFloat(data.Fluency);			
+			self.hls_summary_hour_sum.data.push(data);
 		}		
 		
 	}
@@ -159,11 +178,13 @@ var summary = function(){
 			self.hls_summary_minitue = {};
 			self.rtmp_summary_mintiue_sum = {
 					sum : 0,
-					flu : 0	
+					flu : 0	,
+					data : []
 			};
 			self.hls_summary_mintiue_sum = {
 					sum : 0,
-					flu : 0	
+					flu : 0	,
+					data : []
 			};
 			
 		},60*1000);	
@@ -180,11 +201,13 @@ var summary = function(){
 			self.hls_summary_hour = {};
 			self.rtmp_summary_hour_sum = {
 					sum : 0,
-					flu : 0	
+					flu : 0	,
+					data : []
 			};
 			self.hls_summary_hour_sum = {
 					sum : 0,
-					flu : 0	
+					flu : 0	,
+					data : []
 			};
 			
 		},24*60*60*1000);			
@@ -199,17 +222,19 @@ var summary = function(){
 					one[app] = one[app] || {};
 					one[app][stream] = one[app][stream] || {
 						times:[],
-						flu:[]
+						flu:[],
+						sum:[]
 					};
 					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
 						
 						one[app][stream].times.shift();
 						one[app][stream].flu.shift();
+						one[app][stream].sum.shift();
 					}
 					
 					one[app][stream].times.push(new Date().getTime());
 					one[app][stream].flu.push(tmp.sum === 0 ? 0 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100);
-							
+					one[app][stream].sum.push(tmp.sum);	
 				}
 			}
 
@@ -220,10 +245,12 @@ var summary = function(){
 						
 						one[app][stream].times.shift();
 						one[app][stream].flu.shift();
+						one[app][stream].sum.shift();	
 					}
 					
 						one[app][stream].times.push(new Date().getTime());
 						one[app][stream].flu.push(0);
+						one[app][stream].sum.push(0);	
 					}
 				}
 			}
@@ -236,7 +263,8 @@ var summary = function(){
 			//sum			
 			one.push({
 				time : new Date().getTime(),
-				flu : para.sum === 0 ? 0 : (parseFloat((para.flu / para.sum).toFixed(2)) * 100)
+				flu : para.sum === 0 ? 0 : (parseFloat((para.flu / para.sum).toFixed(2)) * 100),
+				sum : para.sum
 			});
 	
 			while(one.length > deletNum){//超过24小时,从数组头去掉超出的数据
@@ -261,7 +289,8 @@ var summary = function(){
 	self.get_fluency_record = function(his,start,end){
 		var record = {
 			times : [],
-			flu : []
+			flu : [],
+			sum : []
 		};
 		if(!start && !end){
 			for(var i in his){
@@ -269,6 +298,7 @@ var summary = function(){
 				var tmp_time = new Date(one.time).pattern("yyyy-MM-dd HH:mm:ss");
 				record.times.push(tmp_time);
 				record.flu.push(one.flu);
+				record.sum.push(one.sum);
 			}
 			return record;
 		}
@@ -282,16 +312,19 @@ var summary = function(){
 					if(cur.time >= start && cur.time <= end){
 						record.times.push(tmp_time);
 						record.flu.push(cur.data);
+						record.sum.push(cur.sum);
 					}
 				}else if(start && !end){
 					if(cur.time >= start){
 						record.times.push(tmp_time);
 						record.flu.push(cur.data);
+						record.sum.push(cur.sum);
 					}
 				}else if(!start && end){
 					if(cur.time <= end){
 						record.times.push(tmp_time);
 						record.flu.push(cur.data);
+						record.sum.push(cur.sum);
 					}
 				}
 
@@ -322,7 +355,8 @@ var summary = function(){
 	self.get_flu_record_for_app_stream = function(his,app,stream,start,end){
 		var res = {
 			times:[],
-			flu :[]
+			flu :[],
+			sum : []
 		};
 		if(his[app] && his[app][stream]){		
 			var data = his[app][stream];		
@@ -331,6 +365,7 @@ var summary = function(){
 					var tmp_time = new Date(data.times[i]).pattern("yyyy-MM-dd HH:mm:ss");
 					res.times.push(tmp_time);
 					res.flu.push(data.flu[i]);
+					res.sum.push(data.sum[i]);
 				}
 				return res;
 			}
@@ -341,17 +376,20 @@ var summary = function(){
 				 if(start && end){
 					if(data.times[i] >= start && data.times[i] <= end){
 						res.times.push(tmp_time);
-						res.flu.push(data.flu[i]);
+						res.flu.push(data.flu[i]);						
+						res.sum.push(data.sum[i]);
 					}
 				}else if(start && !end){
 					if(data.times[i] >= start){
 						res.times.push(tmp_time);
-						res.flu.push(data.flu[i]);
+						res.flu.push(data.flu[i]);						
+						res.sum.push(data.sum[i]);
 					}
 				}else if(!start && end){
 					if(data.times[i] <= end){
 						res.times.push(tmp_time);
-						res.flu.push(data.flu[i]);
+						res.flu.push(data.flu[i]);						
+						res.sum.push(data.sum[i]);
 					}
 				}
 			}

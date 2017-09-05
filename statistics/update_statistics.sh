@@ -13,10 +13,10 @@ fi
 #fi
 
 pid=`ps -ef|grep -i statistics_main.js |grep -v "grep"|awk '{print $2}'`
-echo "node pid:$pid,rm:$b_rm"
+echo "ctl pid:$pid,rm:$b_rm"
 
 if [ $b_rm -eq 1 ]; then
     rm -rf Log
 fi
 
-kill $pid
+kill -9  $pid
