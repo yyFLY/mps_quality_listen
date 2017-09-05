@@ -1,0 +1,569 @@
+<html lang="zh-CN">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+		<meta name="description" content="">
+		<meta name="author" content="">
+
+		<title>质量监控</title>
+		<style>
+			html,body{overflow-x: hidden}
+			.search.u-text1{color:#fff}
+			.shape{height: 300px;}
+		</style>
+		<script type="text/javascript" src="js/echarts.min.js"></script>
+	</head>
+
+	<body style="background-color: #404a59;">
+		
+		<div class="search u-text1">
+			<p>app stream 都填了才能查出数据。否则查出的是所有数据</p>
+			<p>数据每分钟根据条件更新一次。不想等待可点击按钮，立即更新。</p>
+			app : <input class="app"></input>
+			stream : <input class="stream"></input>
+			<button type="button" class="btn">手动立即更新</button>
+		</div>
+		<div id="rtmp_day_chart" class="shape"></div>
+		<div id="hls_day_chart" class="shape"></div>
+		
+		<!--<div id="s_chart" style="height: 33%;width: 110%;position: absolute;top: 33%;left: -6%;"></div>-->
+		
+		<div id="rtmp_month_chart" class="shape" style="width: 51%;position: absolute;left: -1%;"></div>
+		<div id="hls_month_chart"class="shape"  style="width: 51%;position: absolute;left: 49%;"></div>
+		
+		<script src="js/jquery.min.js"></script>
+
+		<script type="text/javascript">
+			GLOBAL_FLAG = false;//是否带条件查询
+			var url = 'http://127.0.0.1:8080/get_mps_summary';
+			//		var url = 'http://114.55.237.92:8080/get_mps_summary';
+			
+			
+			var __url = function(json) {
+				var url_ = url + '?';
+				for(var key in json) {
+					url_ += key + '=' + json[key] + "&";
+				}
+				url_ = url_.substr(0, url_.length - 1);
+				console.log(url_);
+				return url_;
+			};
+
+			//string format
+			String.prototype.format = function(args) {
+				var result = this;
+				if(arguments.length > 0) {
+					if(arguments.length == 1 && typeof(args) == "object") {
+						for(var key in args) {
+							if(args[key] != undefined) {
+								var reg = new RegExp("({" + key + "})", "g");
+								result = result.replace(reg, args[key]);
+							}
+						}
+					} else {
+						for(var i = 0; i < arguments.length; i++) {
+							if(arguments[i] != undefined) {　　　　　　　　　　　　
+								var reg = new RegExp("({)" + i + "(})", "g");
+								result = result.replace(reg, arguments[i]);
+							}
+						}
+					}
+				}
+				return result;
+			};
+			
+			var init = function() {
+				var option = getOption();
+				update_quality_data('day',false,true,option.app,option.stream);
+				update_quality_data('minute',true,true,option.app,option.stream);
+				
+				 setInterval(function(){
+					var option = getOption();
+				 	update_quality_data('minute',false,false,option.app,option.stream);
+				 },60 * 1000);
+				
+				setInterval(function(){
+					var option = getOption();
+				  	update_quality_data('day',false,false,option.app,option.stream);
+				  },24*60*60*1000);
+			};
+			
+			var getOption = function(){
+				var option ={
+					app : '',
+					stream : ''
+				} 
+				if(GLOBAL_FLAG){
+					option.app = $('.app').val();
+					option.stream = $('.stream').val();									
+				}
+				return option;
+			}
+			var legend_data = [{
+				name : '流畅度(单位：%)',
+				icon : 'circle'
+			}];
+			var hls_legend_data = [{
+				name : '流畅度(单位：%)',
+				icon : 'circle'
+			}];
+			
+			var all_legend_data = [{
+				name : '流畅度(单位：%)',
+				icon : 'circle'
+			}];
+			
+			var rtmp_colors = ['#00B7FF','#D43F3A','#4CAE4C','#FF8C00'];
+			var hls_colors = ['#c23531','#2f4554', '#61a0a8'];
+
+
+
+			
+			var all_colors = ['#00B7FF','#D43F3A','#4CAE4C','#FF8C00'];
+			
+			var charts = [
+							echarts.init(document.getElementById('rtmp_day_chart')),
+							echarts.init(document.getElementById('hls_day_chart')),
+							echarts.init(document.getElementById('rtmp_month_chart')),
+							echarts.init(document.getElementById('hls_month_chart'))
+						];
+			var update_quality_data = function(time,real_time,once,app,stream){
+				
+				var json = {
+					key: 'get_mps_summary'
+				};			
+				if(typeof app != 'undefined'){
+					json.app = app;
+				}
+				if(typeof stream != 'undefined'){
+					json.stream = stream;
+				}
+				$.getJSON(__url(json), function(json) {					
+					if(json.code != 0){
+						console.log('update_quality_data err :' + json.code);
+					}else{
+						var real_data = json.real_data ? json.real_data : null;						
+						var data = json.data;
+						var avg_data = null;
+						if(data){
+							//console.log(data);
+							if(data.length == 0){
+								return;
+							}
+							var avg_data_tmp = {
+								rtmp : [0,0,0],
+								hls : [0,0,0,0]
+							};
+							avg_data = [0];
+							
+					
+							avg_data[0] = [0];
+							
+						
+						}					
+						if(once){
+							if(time == 'day'){
+								update_chart(charts[2],rtmp_colors,'RTMP质量监控/月',data.rtmp_hour.times ?data.rtmp_hour.times:[] ,[
+									{
+										name:'流畅度',
+										type:'line',
+										smooth:true,
+										data: data.rtmp_hour.flu ? data.rtmp_hour.flu : [],
+										symbolSize : 10,
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'},
+												{type: 'max', name: '最高'}
+											]
+										},
+										markLine: {
+											label : {
+												normal : {
+													formatter: '{b}: {c}'
+												}
+											},
+											data: [
+												{type: 'average', name: '平均'}
+											]
+										}
+									}
+								],legend_data,'300px',avg_data,true);
+								
+								update_chart(charts[3],rtmp_colors,'HLS质量监控/月',data.hls_hour.times ?data.hls_hour.times:[] ,[
+									{
+										name:'流畅度',
+										type:'line',
+										smooth:true,
+										data: data.hls_hour.flu ? data.hls_hour.flu : [],
+										symbolSize : 10,
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'},
+												{type: 'max', name: '最高'}
+											]
+										},
+										markLine: {
+											label : {
+												normal : {
+													formatter: '{b}: {c}'
+												}
+											},
+											data: [
+												{type: 'average', name: '平均'}
+											]
+										}
+									}
+								],hls_legend_data,'300px',avg_data,true);
+							}else if(time == 'minute'){
+								update_charts_of_day('rtmp',charts[0],rtmp_colors,'RTMP质量监控/天',data.rtmp_minitue.times ?data.rtmp_minitue.times:[] ,real_data?real_data.date:[], [
+									{
+										name:'流畅度(单位：%)',
+										type:'line',
+										data: data.rtmp_minitue.flu ? data.rtmp_minitue.flu : [], 
+										smooth:true,
+										symbol: 'none',
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'},
+											]
+										},
+										xAxisIndex: 0,
+										yAxisIndex: 0
+									}
+								],legend_data,null,avg_data,true,[
+									{x: '4%', y: '15%', width: '90%', height: '64%'}
+								]);
+								
+								update_charts_of_day('hls',charts[1],rtmp_colors,'HLS质量监控/天',data.hls_minitue.times ?data.hls_minitue.times:[],real_data?real_data.date:[],[
+									{
+										name:'流畅度(单位：%)',
+										type:'line',
+										smooth:true,
+										data: data.hls_minitue.flu ? data.hls_minitue.flu : [],
+										symbolSize : 0,
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'}
+											]
+										},
+										xAxisIndex: 0,
+										yAxisIndex: 0
+									}
+								],hls_legend_data,null,avg_data,true,[
+									{x: '4%', y: '15%', width: '90%', height: '64%'}
+								]);
+							}
+						}else{
+							
+
+							if(time == 'day'){
+								charts[2].setOption({
+									series : [
+										{
+											name:'流畅度',
+											type:'line',
+											data: data.rtmp_hour.flu ? data.rtmp_hour.flu : [],
+											symbolSize : 10,
+											markPoint: {
+												data: [
+													{type: 'min', name: '最低'},
+													{type: 'max', name: '最高'}
+												]
+											},
+											markLine: {
+												label : {
+													normal : {
+														formatter: '{b}: {c}'
+													}
+												},
+												data: [
+													{type: 'average', name: '平均'}
+												]
+											}
+										}
+									],
+									xAxis : {
+										data : data.rtmp_hour.times
+									},
+									animation : false
+								});
+								
+								
+								charts[3].setOption({
+									legend: {
+										formatter : function(name){
+											switch (name){
+												case '流畅度':
+													return '流畅度 | '+avg_data[0];
+												default :
+													return '未知';
+											}
+										}
+									},
+									series : [
+										{
+											name:'上行ts',
+											type:'line',
+											data: data.hls_hour.flu ? data.hls_hour.flu : [],
+											symbolSize : 10,
+											markPoint: {
+												data: [
+													{type: 'min', name: '最低'},
+													{type: 'max', name: '最高'}
+												]
+											},
+											markLine: {
+												label : {
+													normal : {
+														formatter: '{b}: {c}'
+													}
+												},
+												data: [
+													{type: 'average', name: '平均'}
+												]
+											}
+										}
+									],
+									xAxis : {
+										data : data.hls_hour.times
+									},
+									animation : false
+								});
+								
+							}else{
+								day_options.rtmp.xAxis[0].data = data.rtmp_minitue.times;
+								day_options.hls.xAxis[0].data = data.hls_minitue.times;
+								day_options.rtmp.series[0].data = data.rtmp_minitue.flu;
+								day_options.hls.series[0].data = data.hls_minitue.flu;
+								
+								charts[0].setOption({
+									legend: {
+										formatter : function(name){
+											switch (name){
+												case '流畅度':
+													return '流畅度 | '+avg_data[0]+'%';
+												default :
+													return '未知';
+											}
+										}
+									},
+									series : day_options.rtmp.series,
+									xAxis : day_options.rtmp.xAxis,
+									animation : false
+								});
+								
+								charts[1].setOption({
+									legend: {
+										formatter : function(name){
+											switch (name){
+												case '流畅度':
+													return '流畅度 | '+avg_data[0]+'%';
+												default :
+													return '未知';
+											}
+										}
+									},
+									series : day_options.hls.series,
+									xAxis : day_options.hls.xAxis,
+									animation : false
+								});
+								
+							}
+						}
+					}
+				});
+			 }
+		
+			var update_chart = function(chart,colors, title, times, series,legend_data,legend_width,avg_data,is_animation) {
+				var option = {
+					animation : is_animation ? is_animation : false,
+					backgroundColor: '#404a59',
+				    title: {
+				        text: title,
+				        left: 'center',
+				        top : '0%',
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    color : colors,
+				    tooltip: {
+				        trigger: 'axis',
+				        axisPointer  : {
+				        	lineStyle :{
+				        		color : '#FFF'
+				        	}
+				        }
+				    },
+				    legend: {
+				    	left: '9%',
+				    	width : legend_width ? legend_width : 'auto',
+				        data: legend_data,
+				        margin : [100,100],
+				        textStyle: {
+							color: '#fff'
+						}
+				    },
+				    toolbox: {
+				        show: true,
+				        right: '8%',
+				        feature: {
+				            dataZoom: {
+				                yAxisIndex: 'none'
+				            },
+								//dataView: {readOnly: false},
+								//magicType: {type: ['line', 'bar']},
+								//restore: {},
+				            saveAsImage: {}
+				        },
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    xAxis:  {
+				        type: 'category',
+				        boundaryGap: false,
+				        data: times,
+			        	axisLabel : {
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        interval : 1
+				    },
+				    yAxis: {
+				        type: 'value',
+				        axisLabel : {
+				        	formatter: '{value} %',
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        max : 100,
+				        min : 'dataMin',
+				        splitNumber : '2'
+				    },
+				    series: series
+				};
+				chart.setOption(option);
+			};
+			var day_options = {
+				rtmp : {},
+				hls : {}
+			};
+			var update_charts_of_day = function(type,chart,colors, title, times,real_times, series,legend_data,legend_width,avg_data,is_animation,grid){
+				var day_option = {
+					animation : is_animation ? is_animation : false,
+					backgroundColor: '#404a59',
+				    title: {
+				        text: title,
+				        left: 'center',
+				        top : '0%',
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    color : colors,
+				    tooltip: {
+				        trigger: 'axis',
+				        axisPointer  : {
+				        	lineStyle :{
+				        		color : '#FFF'
+				        	}
+				        }
+				    },
+				    grid: grid,
+				    legend: {
+				    	left: '3%',
+				    	width : legend_width ? legend_width : 'auto',
+				        data: legend_data,
+				        margin : [100,100],
+				        textStyle: {
+							color: '#fff'
+						}
+				    },
+				    toolbox: {
+				        show: true,
+				        right: '8%',
+				        feature: {
+				            dataZoom: {
+				                yAxisIndex: 'none'
+				            },
+				            saveAsImage: {}
+				        },
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    xAxis:  [{
+				        type: 'category',
+				        gridIndex: 0,
+				        boundaryGap: false,
+				        data: times,
+			        	axisLabel : {
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        interval : 1
+				    }],
+				    yAxis: [{
+				        type: 'value',
+				        gridIndex: 0,
+				        axisLabel : {
+				        	formatter: '{value} %',
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        max : 100,
+				        min : 0,
+				        splitNumber : '2',
+							//splitLine : {
+							//show : false
+							//}
+				    }],
+				    series: series
+				};
+				chart.setOption(day_option);
+				day_options[type] = day_option;
+			};
+			
+			//入口
+			$().ready(function() {
+				init();
+				$('.btn').on('click',function(){									
+					GLOBAL_FLAG = true;		
+					var option = getOption();
+					update_quality_data('day',true,true,option.app,option.stream);
+					update_quality_data('minute',true,true,option.app,option.stream);		
+				})
+			
+			});
+		</script>
+</body>
+
+</html>

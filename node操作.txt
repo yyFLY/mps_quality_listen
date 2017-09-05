@@ -1,0 +1,3 @@
+./update_statistics.sh 1      重启进程并删除日志 。0是不删除
+
+ps -ef | grep node  查看正在进行的进程
