@@ -169,7 +169,7 @@
 						}					
 						if(once){
 							if(time == 'day'){
-								update_chart(charts[2],rtmp_colors,'RTMP质量监控/月',data.rtmp_hour.times ?data.rtmp_hour.times:[] ,[
+								update_chart(charts[2],rtmp_colors,'RTMP质量监控/月',data.rtmp_hour.times ?data.rtmp_hour.times:[] ,data.rtmp_hour.sum ?data.rtmp_hour.sum:[] ,[
 									{
 										name:'流畅度',
 										type:'line',
@@ -195,7 +195,7 @@
 									}
 								],legend_data,'300px',avg_data,true);
 								
-								update_chart(charts[3],rtmp_colors,'HLS质量监控/月',data.hls_hour.times ?data.hls_hour.times:[] ,[
+								update_chart(charts[3],rtmp_colors,'HLS质量监控/月',data.hls_hour.times ?data.hls_hour.times:[],data.hls_hour.sum ?data.hls_hour.sum:[] ,[
 									{
 										name:'流畅度',
 										type:'line',
@@ -221,7 +221,7 @@
 									}
 								],hls_legend_data,'300px',avg_data,true);
 							}else if(time == 'minute'){
-								update_charts_of_day('rtmp',charts[0],rtmp_colors,'RTMP质量监控/天',data.rtmp_minitue.times ?data.rtmp_minitue.times:[] ,real_data?real_data.date:[], [
+								update_charts_of_day('rtmp',charts[0],rtmp_colors,'RTMP质量监控/天',data.rtmp_minitue.times ?data.rtmp_minitue.times:[] ,data.rtmp_minitue.sum ?data.rtmp_minitue.sum:[], [
 									{
 										name:'流畅度(单位：%)',
 										type:'line',
@@ -238,9 +238,9 @@
 									}
 								],legend_data,null,avg_data,true,[
 									{x: '4%', y: '15%', width: '90%', height: '64%'}
-								]);
+								],);
 								
-								update_charts_of_day('hls',charts[1],rtmp_colors,'HLS质量监控/天',data.hls_minitue.times ?data.hls_minitue.times:[],real_data?real_data.date:[],[
+								update_charts_of_day('hls',charts[1],rtmp_colors,'HLS质量监控/天',data.hls_minitue.times ?data.hls_minitue.times:[],data.hls_minitue.sum ?data.hls_minitue.sum:[],[
 									{
 										name:'流畅度(单位：%)',
 										type:'line',
@@ -263,6 +263,10 @@
 							
 
 							if(time == 'day'){
+								
+								var rtmpSum = data.rtmp_hour.sum;
+								var hlsSum = data.hls_hour.sum;
+
 								charts[2].setOption({
 									series : [
 										{
@@ -290,6 +294,21 @@
 									],
 									xAxis : {
 										data : data.rtmp_hour.times
+									},
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = rtmpSum;
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+											var res = param.name+'</br>流畅度：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return res;
+										},
 									},
 									animation : false
 								});
@@ -333,6 +352,21 @@
 									xAxis : {
 										data : data.hls_hour.times
 									},
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = hlsSum;
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+											var res = param.name+'</br>流畅度：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return res;
+										},
+									},
 									animation : false
 								});
 								
@@ -341,7 +375,9 @@
 								day_options.hls.xAxis[0].data = data.hls_minitue.times;
 								day_options.rtmp.series[0].data = data.rtmp_minitue.flu;
 								day_options.hls.series[0].data = data.hls_minitue.flu;
-								
+								var rtmpSum = data.rtmp_minitue.sum;
+								var hlsSum = data.hls_minitue.sum;
+
 								charts[0].setOption({
 									legend: {
 										formatter : function(name){
@@ -355,6 +391,21 @@
 									},
 									series : day_options.rtmp.series,
 									xAxis : day_options.rtmp.xAxis,
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = rtmpSum;
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+											var res = param.name+'</br>流畅度：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return  res;
+										},
+									},
 									animation : false
 								});
 								
@@ -369,6 +420,21 @@
 											}
 										}
 									},
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = hlsSum;	
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}
+											var res = param.name+'</br>流畅度：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return  res;
+										},
+									},
 									series : day_options.hls.series,
 									xAxis : day_options.hls.xAxis,
 									animation : false
@@ -380,7 +446,7 @@
 				});
 			 }
 		
-			var update_chart = function(chart,colors, title, times, series,legend_data,legend_width,avg_data,is_animation) {
+			var update_chart = function(chart,colors, title, times,sum, series,legend_data,legend_width,avg_data,is_animation) {
 				var option = {
 					animation : is_animation ? is_animation : false,
 					backgroundColor: '#404a59',
@@ -399,7 +465,13 @@
 				        	lineStyle :{
 				        		color : '#FFF'
 				        	}
-				        }
+				        },        
+						formatter: function (param) {																		
+							param = param[0];
+							if(sum.length <= 0 || typeof param == "undefined"){return '';}
+							var res = param.name+'</br>流畅度：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+							return res;
+						}
 				    },
 				    legend: {
 				    	left: '9%',
@@ -467,7 +539,7 @@
 				rtmp : {},
 				hls : {}
 			};
-			var update_charts_of_day = function(type,chart,colors, title, times,real_times, series,legend_data,legend_width,avg_data,is_animation,grid){
+			var update_charts_of_day = function(type,chart,colors, title, times,sum, series,legend_data,legend_width,avg_data,is_animation,grid){
 				var day_option = {
 					animation : is_animation ? is_animation : false,
 					backgroundColor: '#404a59',
@@ -486,7 +558,13 @@
 				        	lineStyle :{
 				        		color : '#FFF'
 				        	}
-				        }
+				        },
+						formatter: function (param) {
+							param = param[0];
+							if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+							var res = param.name+'</br>流畅度：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+							return res;
+						},
 				    },
 				    grid: grid,
 				    legend: {
