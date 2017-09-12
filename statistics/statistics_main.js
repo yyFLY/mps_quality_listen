@@ -8,23 +8,7 @@
 "undefined" != typeof config ? 'config yes' : config = require('./config').config;
 "undefined" != typeof tools ? 'tools yes' : tools = require('./lib/tools').New();
 "undefined" != typeof log ? 'log yes' : log = require('./lib/log').New();
-
-
-
-//proess quit******************************************
-process.on('exit',function(code){
-	log.fatal('process exit '+ code);
-	if(code !== 99){
-		summary.save_record();
-	}
-});
-
-process.on('SIGTERM', function(){
-	log.fatal('process SIGTERM');
-	summary.save_record(function(){
-		process.exit(99);
-	});
-});
+// "undefined" != typeof cron ? 'cron yes' : cron = require('cron').CronJob;
 
 //setTimeout(function(){
 //	process.exit(10);
@@ -37,6 +21,24 @@ var http_server = require('./lib/http_server').New(config.http);//http svr
 var summary = require('./summary.js').New();
 
 //event******************************************
+//proess quit******************************************
+process.on('exit',function(code){
+	log.fatal('process exit '+ code);
+	if(code !== 99){
+		summary.save_record(function(){
+			log.info('summary save_record success');
+		});
+	}
+});
+
+process.on('SIGTERM', function(){
+	log.fatal('process SIGTERM');
+	summary.save_record(function(){
+		log.info('summary save_record success');
+		process.exit(99);
+	});
+});
+
 //http_svr
 
 var g_data = null;
@@ -80,7 +82,7 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 		case '/get_hls_flu_record_for_app_stream':
 			res.data = summary.get_hls_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
 			break;
-			case '/get_rtmp_fluency_record_hour':
+		case '/get_rtmp_fluency_record_hour':
 			res.data = summary.get_rtmp_fluency_record_hour(data.start_time,data.end_time);
 			break;
 		case '/get_hls_fluency_record_hour':
@@ -91,6 +93,9 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 			break;	
 		case '/get_hls_flu_record_for_app_stream_hour':
 			res.data = summary.get_hls_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
+			break;
+		case '/get_rtmp_flu_range_for_app_stream_minitue':
+			res.data = summary.get_rtmp_flu_range_for_app_stream_minitue();
 			break;
 		case '/get_mps_summary':
 			var returnData = {rtmp_minitue:{},hls_minitue:{}};

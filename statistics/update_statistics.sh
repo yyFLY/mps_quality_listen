@@ -19,4 +19,4 @@ if [ $b_rm -eq 1 ]; then
     rm -rf Log
 fi
 
-kill -9  $pid
+kill  $pid

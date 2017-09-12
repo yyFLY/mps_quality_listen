@@ -1,8 +1,21 @@
 
 
-var summary = function(){
+SUMMARY_TYPE = {
+	MINUTE : 0,
+	HOUR : 1
+};
+DATA_TYPE = {
+	HLS : 0,
+	RTMP : 1
+};
+SUMMARY_SEARCH = {
+	STREAM : 0,
+	ALL : 1
+}
+var summary = function(config){
 	var self = this;
-		
+
+	self.rtmp_range_minitue = [];
 	self.rtmp_summary_minitue = {
 			// "app" : {
 			// 	"stream" : {
@@ -103,7 +116,6 @@ var summary = function(){
 		}	
 
 		//每月的
-
 		if(data.App && data.Stream && data.Fluency !== undefined && data.ProtocolType == 'rtmp'){
 			self.rtmp_summary_hour[data.App] = self.rtmp_summary_hour[data.App] || {};
 			self.rtmp_summary_hour[data.App][data.Stream] = self.rtmp_summary_hour[data.App][data.Stream]  || {
@@ -139,20 +151,30 @@ var summary = function(){
 			self.hls_summary_hour_sum.data.push(data);
 		}		
 		
-	}
-
+	};
 
 	self.save_record = function(end_fun){	
-		tools.save_json_to_dir('old','rtmp_history_flu_summary',self.rtmp_history_flu_summary,end_fun);	
-		tools.save_json_to_dir('old','hls_history_flu_summary',self.hls_history_flu_summary,end_fun);
-		tools.save_json_to_dir('old','rtmp_history_flu_summary_sum',self.rtmp_history_flu_summary_sum);	
-		tools.save_json_to_dir('old','hls_history_flu_summary_sum',self.hls_history_flu_summary_sum);
-
-		tools.save_json_to_dir('old','rtmp_history_flu_summary_hour',self.rtmp_history_flu_summary_hour,end_fun);	
-		tools.save_json_to_dir('old','hls_history_flu_summary_hour',self.hls_history_flu_summary_hour,end_fun);
-		tools.save_json_to_dir('old','rtmp_history_flu_summary_sum_hour',self.rtmp_history_flu_summary_sum_hour);	
-		tools.save_json_to_dir('old','hls_history_flu_summary_sum_hour',self.hls_history_flu_summary_sum_hour);
+		tools.save_json_to_dir('old','rtmp_history_flu_summary',self.rtmp_history_flu_summary,function(){
+			tools.save_json_to_dir('old','hls_history_flu_summary',self.hls_history_flu_summary,function(){
+				tools.save_json_to_dir('old','rtmp_history_flu_summary_sum',self.rtmp_history_flu_summary_sum,function(){
+					tools.save_json_to_dir('old','hls_history_flu_summary_sum',self.hls_history_flu_summary_sum,function(){
+						tools.save_json_to_dir('old','rtmp_history_flu_summary_hour',self.rtmp_history_flu_summary_hour,function(){
+							tools.save_json_to_dir('old','hls_history_flu_summary_hour',self.hls_history_flu_summary_hour,function(){
+								tools.save_json_to_dir('old','rtmp_history_flu_summary_sum_hour',self.rtmp_history_flu_summary_sum_hour,function(){
+									tools.save_json_to_dir('old','hls_history_flu_summary_sum_hour',self.hls_history_flu_summary_sum_hour,end_fun);
+								});
+							});
+						});
+					});
+				});	
+			});
+		});	
 	};
+	
+	// var job_five = new cron("1 * * * * *",function(){self.save_record();},OnStop,true);
+	// function OnStop(){
+	// 	console.log("[Adycdn] OnStop",new Date());
+	// };//每天保存一次数据
 
 	self.init_record = function(){
 		self.rtmp_history_flu_summary = tools.get_json_by_jsonflie('old','rtmp_history_flu_summary') || {};//从文件中读取历史数据
@@ -169,10 +191,15 @@ var summary = function(){
 		
 		setInterval(function(){	
 			var deletNum =  60*60*24;//24小时
-			self.rtmp_history_flu_summary = getHistory(self.rtmp_summary_minitue,self.rtmp_history_flu_summary,deletNum);
-			self.hls_history_flu_summary = getHistory(self.hls_summary_minitue,self.hls_history_flu_summary,deletNum);
-			self.rtmp_history_flu_summary_sum = getAllHistory(self.rtmp_summary_mintiue_sum,self.rtmp_history_flu_summary_sum,deletNum);
-			self.hls_history_flu_summary_sum = getAllHistory(self.hls_summary_mintiue_sum,self.hls_history_flu_summary_sum,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,SUMMARY_SEARCH.STREAM,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.ALL,deletNum);
+
+			// self.rtmp_history_flu_summary = getHistory(self.rtmp_summary_minitue,self.rtmp_history_flu_summary,deletNum);
+			// self.hls_history_flu_summary = getHistory(self.hls_summary_minitue,self.hls_history_flu_summary,deletNum);
+			// self.rtmp_history_flu_summary_sum = getAllHistory(self.rtmp_summary_mintiue_sum,self.rtmp_history_flu_summary_sum,deletNum);
+			// self.hls_history_flu_summary_sum = getAllHistory(self.hls_summary_mintiue_sum,self.hls_history_flu_summary_sum,deletNum);
 
 			self.rtmp_summary_minitue = {};
 			self.hls_summary_minitue = {};
@@ -186,16 +213,21 @@ var summary = function(){
 					flu : 0	,
 					data : []
 			};
-			
+			if(tools.curr_time("HH:mm") === "08:00"){
+				self.save_record()
+			}
 		},60*1000);	
 
 		setInterval(function(){	
 			var deletNum =  60*60*24*30;//30天
-			self.rtmp_history_flu_summary_hour = getHistory(self.rtmp_summary_hour,self.rtmp_history_flu_summary_hour,deletNum);
-			self.hls_history_flu_summary_hour = getHistory(self.hls_summary_hour,self.hls_history_flu_summary_hour,deletNum);
-			self.rtmp_history_flu_summary_sum_hour = getAllHistory(self.rtmp_summary_hour_sum,self.rtmp_history_flu_summary_sum_hour,deletNum);
-			self.hls_history_flu_summary_sum_hour = getAllHistory(self.hls_summary_hour_sum,self.hls_history_flu_summary_sum_hour,deletNum);
-
+			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.STREAM,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
+			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.ALL,deletNum);
+			// self.rtmp_history_flu_summary_hour = getHistory(self.rtmp_summary_hour,self.rtmp_history_flu_summary_hour,deletNum);
+			// self.hls_history_flu_summary_hour = getHistory(self.hls_summary_hour,self.hls_history_flu_summary_hour,deletNum);
+			// self.rtmp_history_flu_summary_sum_hour = getAllHistory(self.rtmp_summary_hour_sum,self.rtmp_history_flu_summary_sum_hour,deletNum);
+			// self.hls_history_flu_summary_sum_hour = getAllHistory(self.hls_summary_hour_sum,self.hls_history_flu_summary_sum_hour,deletNum);
 
 			self.rtmp_summary_hour = {};
 			self.hls_summary_hour = {};
@@ -209,8 +241,7 @@ var summary = function(){
 					flu : 0	,
 					data : []
 			};
-			
-		},24*60*60*1000);			
+		},60*60*24*1000);			
 		
 		function getHistory(para,his,deletNum){
 			var para = para;
@@ -257,9 +288,89 @@ var summary = function(){
 			return one;
 		}
 
-		function getAllHistory(para,his,deletNum){
-			var para = para;
-			var one = his || [];
+		function getAllHistory(para,his,deletNum){};
+	}
+	self.add_history_for_time = function(t,d_t,s_t,deletNum){		
+		var deletNum = deletNum;	
+		if(s_t == SUMMARY_SEARCH.STREAM){
+			if(t == SUMMARY_TYPE.MINUTE ){
+				if(d_t == DATA_TYPE.RTMP){
+					var para = self.rtmp_summary_minitue;
+					var one = self.rtmp_history_flu_summary;
+				}else{
+					var para = self.hls_summary_minitue;
+					var one = self.hls_history_flu_summary;
+				}
+			}
+			else if(t == SUMMARY_TYPE.HOUR){
+				if(d_t == DATA_TYPE.RTMP){
+					var para = self.rtmp_summary_hour;
+					var one = self.rtmp_history_flu_summary_hour;
+				}else{
+					var para = self.hls_summary_hour;
+					var one = self.hls_history_flu_summary_hour;
+				}
+			}			
+			for(var app in para){
+				for(var stream in para[app]){
+					var tmp = para[app][stream];
+
+					one[app] = one[app] || {};
+					one[app][stream] = one[app][stream] || {
+						times:[],
+						flu:[],
+						sum:[]
+					};
+					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
+						
+						one[app][stream].times.shift();
+						one[app][stream].flu.shift();
+						one[app][stream].sum.shift();
+					}
+					
+					one[app][stream].times.push(new Date().getTime());
+					one[app][stream].flu.push(tmp.sum === 0 ? 0 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100);
+					one[app][stream].sum.push(tmp.sum);	
+				}
+			}
+
+			for(var app in one){
+				for(var stream in one[app]){
+					if(!para[app] || !para[app][stream]){
+					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
+						
+						one[app][stream].times.shift();
+						one[app][stream].flu.shift();
+						one[app][stream].sum.shift();	
+					}
+					
+						one[app][stream].times.push(new Date().getTime());
+						one[app][stream].flu.push(0);
+						one[app][stream].sum.push(0);	
+					}
+				}
+			}
+		}
+		else{	
+			if(t == SUMMARY_TYPE.MINUTE ){
+				if(d_t == DATA_TYPE.RTMP){
+					var para = self.rtmp_summary_mintiue_sum;
+					var one = self.rtmp_history_flu_summary_sum || [];
+				}else{
+					var para = self.hls_summary_mintiue_sum;
+					var one = self.hls_history_flu_summary_sum || [];
+				}
+			}	
+			else if(t == SUMMARY_TYPE.HOUR){
+				if(d_t == DATA_TYPE.RTMP){
+					var para = self.rtmp_summary_hour_sum;
+					var one = self.rtmp_history_flu_summary_sum_hour || [];
+				}else{
+					var para = self.hls_summary_hour_sum;
+					var one = self.hls_history_flu_summary_sum_hour || []
+				}
+			}	
+		
 			//sum			
 			one.push({
 				time : new Date().getTime(),
@@ -270,8 +381,8 @@ var summary = function(){
 			while(one.length > deletNum){//超过24小时,从数组头去掉超出的数据
 				one.shift();
 			}
-			return one;
 		}
+	
 	};
 
 	self.get_rtmp_fluency_record = function(start,end){	
@@ -398,8 +509,46 @@ var summary = function(){
 		}
 		return res;
 	};
+
+
+	self.get_rtmp_flu_range_for_app_stream_minitue = function(){
+		var para = self.rtmp_summary_minitue;
+		var array = getArrayForMinitue(para);
+		return array.sort(compare('flu'));
+	}
+	self.get_hls_flu_range_for_app_stream_minitue = function(){
+		var para = self.hls_summary_minitue;
+		var array = getArrayForMinitue(para);
+		return array.sort(compare('flu'));
+	}
+	function getArrayForMinitue(para){
+		var array = [];
+	
+		for(var app in para){
+			for(var stream in para[app]){
+				var tmp = para[app][stream];
+				
+				var time = new Date().getTime();
+				var flu = tmp.sum === 0 ? 0 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100;
+				var data = tmp.data[0];
+
+				array.push({flu:flu,data:data,time:time});
+			}
+		}
+
+		return array;
+	}
+	//快速排序
+	function compare(property){
+		 return function(a,b){
+			var value1 = a[property];
+			var value2 = b[property];
+			return value1 - value2;
+		}
+			
+	}
 };
 
-exports.New = function(){
-	return new summary();
+exports.New = function(config){
+	return new summary(config);
 };
