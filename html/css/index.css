@@ -1,0 +1,14 @@
+	html,body{overflow-x: hidden}
+    .tab-pane{padding: 30px 10px 0 10px}
+    .nav-tabs a {color: #fff}
+    .search.u-text1{color:#fff}
+    .u-text2{color:#00B7FF}
+    .u-text3{color:#D43F3A}
+    .shape{height: 300px;}
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover{border:none;  color: #db6f6a;  background-color: #000;}
+    .nav>li>a:focus,.nav>li>a:hover {border:none;background-color:#000;color:#db6f6a;}
+    .nav-tabs>li>a{border:none}
+    .nav-tabs>li{margin-bottom:0}
+    table{color:#fff;}
+    .table-box {width:100%;height:81vh;table-layout:fixed;overflow: auto}
+    .g-table{text-align: center}

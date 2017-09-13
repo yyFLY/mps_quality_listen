@@ -98,7 +98,7 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 			res.data = summary.get_rtmp_flu_range_for_app_stream_minitue();
 			break;
 		case '/get_mps_summary':
-			var returnData = {rtmp_minitue:{},hls_minitue:{}};
+			var returnData = {rtmp_minitue:{},hls_minitue:{},rtmp_range_minite:[],hls_range_minite:[]};
 		
 			if(data.app && data.stream ){
 				returnData.rtmp_minitue = summary.get_rtmp_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
@@ -112,6 +112,8 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 				returnData.rtmp_hour = summary.get_rtmp_fluency_record_hour(data.start_time,data.end_time);
 				returnData.hls_hour = summary.get_hls_fluency_record_hour(data.start_time,data.end_time);
 			}
+			returnData.rtmp_range_minite = summary.get_rtmp_flu_range_for_app_stream_minitue();
+			returnData.hls_range_minite = summary.get_hls_flu_range_for_app_stream_minitue();
 			res.data = returnData;
 			break;
 		default :
