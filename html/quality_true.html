@@ -38,8 +38,8 @@
 
 		<script type="text/javascript">
 			GLOBAL_FLAG = false;//是否带条件查询
-			var url = 'http://127.0.0.1:8080/get_mps_summary';
-			//		var url = 'http://114.55.237.92:8080/get_mps_summary';
+				var url = 'http://127.0.0.1:8080/get_mps_summary';
+			//	var url = 'http://114.55.237.92:8080/get_mps_summary';
 			
 			
 			var __url = function(json) {
@@ -238,7 +238,7 @@
 									}
 								],legend_data,null,avg_data,true,[
 									{x: '4%', y: '15%', width: '90%', height: '64%'}
-								],);
+								]);
 								
 								update_charts_of_day('hls',charts[1],rtmp_colors,'HLS质量监控/天',data.hls_minitue.times ?data.hls_minitue.times:[],data.hls_minitue.sum ?data.hls_minitue.sum:[],[
 									{

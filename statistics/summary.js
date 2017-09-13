@@ -213,7 +213,7 @@ var summary = function(config){
 					flu : 0	,
 					data : []
 			};
-			if(tools.curr_time("HH:mm") === "08:00"){
+			if(tools.curr_time("HH:mm") === "00:00"){
 				self.save_record()
 			}
 		},60*1000);	

@@ -25,7 +25,7 @@ var summary = require('./summary.js').New();
 process.on('exit',function(code){
 	log.fatal('process exit '+ code);
 	if(code !== 99){
-		summary.save_record(function(){
+		summary.save_record(function(success){
 			log.info('summary save_record success');
 		});
 	}
@@ -33,14 +33,14 @@ process.on('exit',function(code){
 
 process.on('SIGTERM', function(){
 	log.fatal('process SIGTERM');
-	summary.save_record(function(){
+	summary.save_record(function(success){
 		log.info('summary save_record success');
 		process.exit(99);
 	});
 });
 
-//http_svr
 
+//http_svr
 var g_data = null;
 http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 	var data = tools.get_json_parse(msg);
@@ -155,3 +155,13 @@ mq.on('deal_poll_msg',function(msg){
 summary.init_record();
 http_server.start();
 mq.start_poll();
+MAX_PAR_DIS = 1000;
+CHECK_PAR_DIS_INTERVAL = 60*1000;
+setInterval(function(){
+	for(var par in mq.curr_offest){
+		if(mq.curr_offest[par].dis && mq.curr_offest[par].dis > MAX_PAR_DIS){
+			log.warn("{0} par warn at {1}".format(par,JSON.stringify(mq.curr_offest[par])));
+		}
+	}
+	//log.info('par info:'+JSON.stringify(mq.curr_offest));
+},CHECK_PAR_DIS_INTERVAL);
