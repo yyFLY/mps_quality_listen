@@ -103,13 +103,13 @@ var summary = function(config){
 			self.hls_summary_minitue[data.App][data.Stream].data.push(data);
 		}
 
-		if(data.Fluency !== undefined  && data.ProtocolType == 'rtmp'){			
+		if(data.Fluency !== undefined  && data.ProtocolType == 'rtmp'){	
 			self.rtmp_summary_mintiue_sum.sum += 1;
 			self.rtmp_summary_mintiue_sum.flu += parseFloat(data.Fluency);	
 			self.rtmp_summary_mintiue_sum.data.push(data);		
 		}
 
-		if(data.Fluency !== undefined  && data.ProtocolType == 'hls'){			
+		if(data.Fluency !== undefined  && data.ProtocolType == 'hls'){
 			self.hls_summary_mintiue_sum.sum += 1;
 			self.hls_summary_mintiue_sum.flu += parseFloat(data.Fluency);
 			self.hls_summary_mintiue_sum.data.push(data);	
@@ -190,7 +190,7 @@ var summary = function(config){
 	
 		
 		setInterval(function(){	
-			var deletNum =  60*60*24;//24小时
+			var deletNum =  60*24;//24小时
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,SUMMARY_SEARCH.STREAM,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
@@ -219,7 +219,7 @@ var summary = function(config){
 		},60*1000);	
 
 		setInterval(function(){	
-			var deletNum =  60*60*24*30;//30天
+			var deletNum =  24*30;//30天
 			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.STREAM,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
@@ -257,7 +257,6 @@ var summary = function(config){
 						sum:[]
 					};
 					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
-						
 						one[app][stream].times.shift();
 						one[app][stream].flu.shift();
 						one[app][stream].sum.shift();
@@ -273,7 +272,6 @@ var summary = function(config){
 				for(var stream in one[app]){
 					if(!para[app] || !para[app][stream]){
 					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
-						
 						one[app][stream].times.shift();
 						one[app][stream].flu.shift();
 						one[app][stream].sum.shift();	
@@ -530,9 +528,10 @@ var summary = function(config){
 				
 				var time = new Date().getTime();
 				var flu = tmp.sum === 0 ? 0 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100;
-				var data = tmp.data[0];
+				var data = tmp.data;
+				var sum = tmp.sum ;
 
-				array.push({flu:flu,data:data,time:time});
+				array.push({flu:flu,data:data,time:time,sum:sum});
 			}
 		}
 
