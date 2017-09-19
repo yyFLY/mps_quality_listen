@@ -1,9 +1,11 @@
 	html,body{overflow-x: hidden}
+    .f-cursor{cursor: pointer}
     .tab-pane{padding: 30px 10px 0 10px}
     .nav-tabs a {color: #fff}
     .u-text1{color:#fff}
     .u-text2{color:#00B7FF}
     .u-text3{color:#D43F3A}
+    .u-text4{color:#4CAE4C}
     .shape{height: 300px;}
     .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover{border:none;  color: #db6f6a;  background-color: #000;}
     .nav>li>a:focus,.nav>li>a:hover {border:none;background-color:#000;color:#db6f6a;}
@@ -12,3 +14,4 @@
     table{color:#fff;}
     .table-box {width:100%;table-layout:fixed;overflow: auto}
     .g-table{text-align: center}
+    .

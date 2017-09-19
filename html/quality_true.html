@@ -70,7 +70,27 @@
 			</div>
 
 		</div>
-		
+		<div class="modal fade f-detail-dialog" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-lg" role="document" style="width:100%">
+				<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">最近一分钟的用户流水</h4>
+				</div>
+				<div class="modal-body">
+					<div class="table-box" style="height:500px">
+						<table class="table  g-table">
+							<thead class="g-detail-th u-text2"></thead>
+							<tbody class="g-detail-tb"><tbody>
+						</table>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+				</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
 		<script src="js/jquery.min.js"></script>
 		<script src="js/bootstrap.min.js"></script>
 		<script type="text/javascript">
@@ -507,20 +527,64 @@
 							$(container1).html(html);
 							var html = '';
 							for(var i = 0; i < array.length; i++){
+								var href = 'http://demo.aodianyun.com/lss/hlsplaytest/player.html?addr=';
+								if(array[i].data[0].ProtocolType == "rtmp"){
+									href +='rtmp://'+array[i].data[0].PlayDomainName+'/'+array[i].data[0].App+'/'+array[i].data[0].Stream;
+								}else{
+									href +='http://'+array[i].data[0].PlayDomainName+'/'+array[i].data[0].App+'/'+array[i].data[0].Stream+'.m3u8';
+								}
+
 								html += ' <tr>\
 										<td class="u-text3">'+array[i].flu.toFixed(0)+'%</td>\
 										<td class="u-text3">'+array[i].sum+'</td>\
 										<td>'+array[i].data[0].ADUin+'</td>\
 										<td>'+array[i].data[0].App+'</td>\
 										<td>'+array[i].data[0].Stream+'</td>\
-										<td  style="width:8%">'+array[i].data[0].MPSId+'</td>\
+										<td>'+array[i].data[0].MPSId+'</td>\
 										<td>'+array[i].data[0].PlayDomainName+'</td>\
 										<td>'+array[i].data[0].PlayerId+'</td>\
-										<td style="width:8%">'+array[i].data[0].Website+'</td>\
-										<td><a onclick=showDetailRange('+i+')>详情</a></td>\
-										</tr> ';
+										<td><div style="width:240px;word-wrap:break-word"> '+array[i].data[0].Website+'</div></td>\
+										<td><a data-index='+i+' class="f-cursor u-text2 u-detail-btn">详情 </a>\
+										<a target="blank" href='+href+' class="u-text4 f-cursor"> 播放</a>\
+										</td></tr>';									
 							}
 							$(container2).html(html);
+							$('.u-detail-btn',container2).on('click',function(){
+								var index = parseInt($(this).attr('data-index'));
+								var c1 = '.g-detail-th';
+								var c2 = '.g-detail-tb';
+								var html = ' \
+										<td>ADUin</td>\
+										<td>App</td>\
+										<td>浏览器</td>\
+										<td>flash</td>\
+										<td>流畅度</td>\
+										<td>MPSId</td>\
+										<td>播放域名</td>\
+										<td>播放ID</td>\
+										<td>Src_Ip</td>\
+										<td>Uid</td>\
+										<td>Website</td> ';
+								$(c1).html(html);
+								var html = '';
+								for(var i = 0; i < array[index].data.length; i++){
+									html += ' <tr>\
+											<td class="u-text3">'+array[index].data[i].ADUin+'</td>\
+											<td class="u-text3">'+array[index].data[i].App+'</td>\
+											<td class="u-text3">'+array[index].data[i].BrowserType+'</td>\
+											<td class="u-text3">'+array[index].data[i].FlashPlayerVersion+'</td>\
+											<td class="u-text3">'+array[index].data[i].Fluency+'</td>\
+											<td class="u-text3">'+array[index].data[i].MPSId+'</td>\
+											<td class="u-text3">'+array[index].data[i].PlayDomainName+'</td>\
+											<td class="u-text3">'+array[index].data[i].PlayerId+'</td>\
+											<td class="u-text3">'+array[index].data[i].Src_Ip+'</td>\
+											<td class="u-text3">'+array[index].data[i].Uid+'</td>\
+											<td class="u-text3"><div style="width:200px;word-wrap:break-word">'+array[index].data[i].Website+'</div></td>\
+											</tr> ';
+								}
+								$(c2).html(html);
+								$('.f-detail-dialog').modal('show');
+							});
 						}
 					}
 				});
