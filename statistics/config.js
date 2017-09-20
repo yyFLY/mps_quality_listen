@@ -10,5 +10,11 @@ exports.config = {
 		subKey : "",
 		maxSize : 800*1024
 	},
-	html_path : '../html'
+	html_path : '../html',
+	status_threshold : {
+		max_cpu : 60,
+		max_in_mb : 5,
+		max_out_mb : 5,
+		max_http_reqs : 1000
+	}
 };

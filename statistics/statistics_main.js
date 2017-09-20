@@ -8,6 +8,8 @@
 "undefined" != typeof config ? 'config yes' : config = require('./config').config;
 "undefined" != typeof tools ? 'tools yes' : tools = require('./lib/tools').New();
 "undefined" != typeof log ? 'log yes' : log = require('./lib/log').New();
+"undefined" != typeof local_info ? 'local_info yes' : local_info = require('./status/local_info').New(config.status_threshold);
+
 // "undefined" != typeof cron ? 'cron yes' : cron = require('cron').CronJob;
 
 //setTimeout(function(){
@@ -39,6 +41,13 @@ process.on('SIGTERM', function(){
 	});
 });
 
+PROCESS_STATUS_UPDATE_INTERVAL = 60 * 1000;
+
+setInterval(function(){
+	var reqs = mq.get_curr_reqs(true);
+	local_info.update_status(reqs?reqs/PROCESS_STATUS_UPDATE_INTERVAL:0);
+	local_info.check_warn();
+},PROCESS_STATUS_UPDATE_INTERVAL);
 
 //http_svr
 var g_data = null;

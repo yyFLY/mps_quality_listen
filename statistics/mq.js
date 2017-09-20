@@ -66,6 +66,16 @@ var mq = function(config){
 	self.start = config.start ? config.start : null;
 	
 	self.curr_offest = {};
+
+    self.curr_reqs = 0;
+    self.get_curr_reqs = function(bclear){
+        if(bclear){
+            var num = self.curr_reqs;
+            self.curr_reqs = 0;
+            return num;
+        }
+        return self.curr_reqs;
+    };
 };
 
 util.inherits(mq, events.EventEmitter);
