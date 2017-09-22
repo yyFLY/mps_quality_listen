@@ -9,6 +9,8 @@
 "undefined" != typeof tools ? 'tools yes' : tools = require('./lib/tools').New();
 "undefined" != typeof log ? 'log yes' : log = require('./lib/log').New();
 "undefined" != typeof local_info ? 'local_info yes' : local_info = require('./status/local_info').New(config.status_threshold);
+"undefined" != typeof express ? 'express yes' : express = require('express');
+"undefined" != typeof session ? 'session yes' : session = require('express-session');
 
 // "undefined" != typeof cron ? 'cron yes' : cron = require('cron').CronJob;
 
@@ -107,23 +109,37 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 			res.data = summary.get_rtmp_flu_range_for_app_stream_minitue();
 			break;
 		case '/get_mps_summary':
-			var returnData = {rtmp_minitue:{},hls_minitue:{},rtmp_range_minite:[],hls_range_minite:[]};
+			var returnData = {rtmp_minitue:{},hls_minitue:{},
+			rtmp_range_minite:[],hls_range_minite:[],rtmp_hour:[],hls_hour:[]};
 		
 			if(data.app && data.stream ){
-				returnData.rtmp_minitue = summary.get_rtmp_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
-				returnData.hls_minitue = summary.get_hls_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
-				returnData.rtmp_hour = summary.get_rtmp_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
-				returnData.hls_hour = summary.get_hls_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
+				if(data.minSearch){
+					returnData.rtmp_minitue = summary.get_rtmp_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
+					returnData.hls_minitue = summary.get_hls_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
+				}
+				if(data.hourSearch){
+					returnData.rtmp_hour = summary.get_rtmp_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
+					returnData.hls_hour = summary.get_hls_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
+				}
 			}
 			else{
-				returnData.rtmp_minitue = summary.get_rtmp_fluency_record(data.start_time,data.end_time);
-				returnData.hls_minitue = summary.get_hls_fluency_record(data.start_time,data.end_time);
-				returnData.rtmp_hour = summary.get_rtmp_fluency_record_hour(data.start_time,data.end_time);
-				returnData.hls_hour = summary.get_hls_fluency_record_hour(data.start_time,data.end_time);
+				if(data.minSearch){
+					returnData.rtmp_minitue = summary.get_rtmp_fluency_record(data.start_time,data.end_time);
+					returnData.hls_minitue = summary.get_hls_fluency_record(data.start_time,data.end_time);
+				}
+				if(data.hourSearch){
+					returnData.rtmp_hour = summary.get_rtmp_fluency_record_hour(data.start_time,data.end_time);
+					returnData.hls_hour = summary.get_hls_fluency_record_hour(data.start_time,data.end_time);
+				}
 			}
-			returnData.rtmp_range_minite = summary.get_rtmp_flu_range_for_app_stream_minitue();
-			returnData.hls_range_minite = summary.get_hls_flu_range_for_app_stream_minitue();
+			if(data.rtmpRange){
+				returnData.rtmp_range_minite = summary.get_rtmp_flu_range_for_app_stream_minitue();
+			}	
+			if(data.hlsRange){
+				returnData.hls_range_minite = summary.get_hls_flu_range_for_app_stream_minitue();
+			}	
 			res.data = returnData;
+			var returnData = '';
 			break;
 		default :
 			fs.readFile(config.html_path+path, "binary", function (err, data) {			

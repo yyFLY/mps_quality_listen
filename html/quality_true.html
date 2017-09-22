@@ -97,8 +97,8 @@
 			GLOBAL_FLAG = false;//是否带条件查询
 			GLOBAL_RangeSearch_FLAG = true;//是否更新表格
 
-			//	var url = 'http://127.0.0.1:8080/get_mps_summary';
-				var url = 'http://114.55.237.92:8080/get_mps_summary';
+				var url = 'http://127.0.0.1:8080/get_mps_summary';
+			//	var url = 'http://114.55.237.92:8080/get_mps_summary';
 			
 			
 			var __url = function(json) {
@@ -136,17 +136,24 @@
 			
 			var init = function() {
 				var option = getOption();
-				update_quality_data('day',false,true,option.app,option.stream);
-				update_quality_data('minute',true,true,option.app,option.stream);
+				update_quality_data({time:'day',once:true,app:option.app,stream:option.stream,hourSearch:true});
+				update_quality_data({time:'minute',once:true,app:option.app,stream:option.stream,minSearch:true});
 				
 				 setInterval(function(){
 					var option = getOption();
-				 	update_quality_data('minute',false,false,option.app,option.stream);
+					var opt = {time:'minute',once:false,app:option.app,stream:option.stream,minSearch:true};
+					var index = $('.nav-tabs li.active').index();
+					if(index == 1){
+						opt.rtmpRange = true;
+					}else if(index == 2){
+						opt.hlsRange = true;
+					}
+				 	update_quality_data(opt);
 				 },60 * 1000);
 				
 				setInterval(function(){
 					var option = getOption();
-				  	update_quality_data('day',false,false,option.app,option.stream);
+				  	update_quality_data({time:'day',once:false,app:option.app,stream:option.stream,hourSearch:true});
 				  },24*60*60*1000);
 			};
 			
@@ -192,16 +199,38 @@
 							echarts.init(document.getElementById('rtmp_month_chart')),
 							echarts.init(document.getElementById('hls_month_chart'))
 						];
-			var update_quality_data = function(time,real_time,once,app,stream){
+			var update_quality_data = function(opt){
 				
+				var time = typeof opt.time != 'undefined' ? opt.time : '';
+				var once = typeof opt.once != 'undefined' ? opt.once : false;
+				var app = typeof opt.app != 'undefined' ? opt.app : '';
+				var stream = typeof opt.stream != 'undefined' ? opt.stream : '';
+				var hourSearch = typeof opt.hourSearch != 'undefined' ? opt.hourSearch : false; 
+				var minSearch = typeof opt.minSearch != 'undefined' ? opt.minSearch : false; 
+				var rtmpRange = typeof opt.rtmpRange != 'undefined' ? opt.rtmpRange : false;  
+				var hlsRange = typeof opt.hlsRange != 'undefined' ? opt.hlsRange : false; 
+				
+
 				var json = {
 					key: 'get_mps_summary'
 				};			
-				if(typeof app != 'undefined'){
+				if(app.length > 0){
 					json.app = app;
 				}
-				if(typeof stream != 'undefined'){
+				if(stream.length > 0){
 					json.stream = stream;
+				}
+				if(hourSearch){
+					json.hourSearch = hourSearch;
+				}
+				if(minSearch){
+					json.minSearch = minSearch;
+				}
+				if(rtmpRange){
+					json.rtmpRange = rtmpRange;
+				}
+				if(hlsRange){
+					json.hlsRange = hlsRange;
 				}
 				$.getJSON(__url(json), function(json) {					
 					if(json.code != 0){
@@ -806,10 +835,30 @@
 				$('.btn').on('click',function(){									
 					GLOBAL_FLAG = true;		
 					var option = getOption();
-					update_quality_data('day',true,true,option.app,option.stream);
-					update_quality_data('minute',true,true,option.app,option.stream);		
-				})
-			
+					update_quality_data({time:'day',once:true,app:option.app,stream:option.stream,hourSearch:true});
+					update_quality_data({time:'minute',once:true,app:option.app,stream:option.stream,minSearch:true});		
+				});
+
+
+				var nav_rtmpRange = 0;
+				var nav_hlsRange = 0;
+				$('.nav-tabs  a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+					var option = getOption();
+					var opt = {time:'minute',once:false,app:option.app,stream:option.stream,minSearch:true};
+					var index = $('.nav-tabs li.active').index();
+				
+					if(index == 1){
+						if(nav_rtmpRange > 1){return}
+						opt.rtmpRange = true;
+						++nav_rtmpRange
+					}else if(index == 2){
+						if(nav_hlsRange > 1){return}
+						opt.hlsRange = true;
+						++nav_hlsRange
+					}
+					
+				 	update_quality_data(opt);
+				});
 			});
 		</script>
 </body>

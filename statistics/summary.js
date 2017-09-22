@@ -11,21 +11,26 @@ DATA_TYPE = {
 SUMMARY_SEARCH = {
 	STREAM : 0,
 	ALL : 1
-}
+};
+
+MINUTE = 60 * 1000;
+
 var summary = function(config){
 	var self = this;
 
-	self.rtmp_range_minitue = [];
+	//app/stream search
 	self.rtmp_summary_minitue = {
 			// "app" : {
 			// 	"stream" : {
 			// 		sum : 0,
 			// 		fluency : 0,
-			//		data:{}
+			//		data:[]
 			// 	}
 			// }
-	}//统计每分钟rtmp的流畅度 按app stream查询
-	self.rtmp_history_flu_summary = {	// "appname":{
+	};
+	//统计每分钟rtmp的流畅度 按app stream查询
+	self.rtmp_history_flu_summary = {	
+		// "appname":{
 		// 	"streamname":{
 		// 		times :[123,4234],
 		// 		flu :[100,100],
@@ -33,10 +38,11 @@ var summary = function(config){
 		// 	}
 		// }
 	};
-	
-	self.hls_summary_minitue = {}//统计每分钟hls的流畅度 按app stream查询
+	self.hls_summary_minitue = {};
+	//统计每分钟hls的流畅度 按app stream查询
 	self.hls_history_flu_summary = {};
 
+	//总的流畅度
 	self.rtmp_summary_mintiue_sum = {
 		sum : 0,
 		flu : 0	,
@@ -48,8 +54,6 @@ var summary = function(config){
 		// 	flu : 0
 		// }
 	];
-	
-
 	self.hls_summary_mintiue_sum = {
 		sum : 0,
 		flu : 0	,
@@ -59,23 +63,20 @@ var summary = function(config){
 
 
 	//近30日的
-	self.rtmp_summary_hour = {
-	}
+	//app/stream search
+	self.rtmp_summary_hour = {};
 	self.rtmp_history_flu_summary_hour = {};
-	
-	self.hls_summary_hour = {}
+	self.hls_summary_hour = {};
 	self.hls_history_flu_summary_hour = {};
+	//总的流畅度
 	self.rtmp_summary_hour_sum = {
 		sum : 0,
-		flu : 0	,
-		data:[]
-
+		flu : 0
 	};
 	self.rtmp_history_flu_summary_sum_hour = [];
 	self.hls_summary_hour_sum = {
 		sum : 0,
-		flu : 0	,
-		data:[]
+		flu : 0
 	};
 	self.hls_history_flu_summary_sum_hour = [];
 
@@ -125,7 +126,6 @@ var summary = function(config){
 			};
 			self.rtmp_summary_hour[data.App][data.Stream].sum += 1;
 			self.rtmp_summary_hour[data.App][data.Stream].flu += parseFloat(data.Fluency);
-			self.rtmp_summary_hour[data.App][data.Stream].data.push(data);
 		}
 		if(data.App && data.Stream && data.Fluency !== undefined && data.ProtocolType == 'hls'){
 			self.hls_summary_hour[data.App] = self.hls_summary_hour[data.App] || {};
@@ -136,19 +136,16 @@ var summary = function(config){
 			};
 			self.hls_summary_hour[data.App][data.Stream].sum += 1;
 			self.hls_summary_hour[data.App][data.Stream].flu += parseFloat(data.Fluency);
-			self.hls_summary_hour[data.App][data.Stream].data.push(data);
 		}
 
 		if(data.Fluency !== undefined  && data.ProtocolType == 'rtmp'){			
 			self.rtmp_summary_hour_sum.sum += 1;
 			self.rtmp_summary_hour_sum.flu += parseFloat(data.Fluency);			
-			self.rtmp_summary_hour_sum.data.push(data);
 		}
 
 		if(data.Fluency !== undefined  && data.ProtocolType == 'hls'){			
 			self.hls_summary_hour_sum.sum += 1;
 			self.hls_summary_hour_sum.flu += parseFloat(data.Fluency);			
-			self.hls_summary_hour_sum.data.push(data);
 		}		
 		
 	};
@@ -161,7 +158,15 @@ var summary = function(config){
 						tools.save_json_to_dir('old','rtmp_history_flu_summary_hour',self.rtmp_history_flu_summary_hour,function(){
 							tools.save_json_to_dir('old','hls_history_flu_summary_hour',self.hls_history_flu_summary_hour,function(){
 								tools.save_json_to_dir('old','rtmp_history_flu_summary_sum_hour',self.rtmp_history_flu_summary_sum_hour,function(){
-									tools.save_json_to_dir('old','hls_history_flu_summary_sum_hour',self.hls_history_flu_summary_sum_hour,end_fun);
+									tools.save_json_to_dir('old','hls_history_flu_summary_sum_hour',self.hls_history_flu_summary_sum_hour,function(){
+										tools.save_json_to_dir('old','rtmp_summary_hour',self.rtmp_summary_hour,function(){
+											tools.save_json_to_dir('old','hls_summary_hour',self.hls_summary_hour,function(){
+												tools.save_json_to_dir('old','rtmp_summary_hour_sum',self.rtmp_summary_hour_sum,function(){
+													tools.save_json_to_dir('old','hls_summary_hour_sum',self.hls_summary_hour_sum,end_fun);
+												});
+											});
+										});
+									});
 								});
 							});
 						});
@@ -183,11 +188,21 @@ var summary = function(config){
 		self.hls_history_flu_summary_sum = tools.get_json_by_jsonflie('old','hls_history_flu_summary_sum') || [];
 		
 
+		self.rtmp_summary_hour = tools.get_json_by_jsonflie('old','rtmp_summary_hour') || {};
+		self.hls_summary_hour = tools.get_json_by_jsonflie('old','hls_summary_hour') || {};
+		self.rtmp_summary_hour_sum = tools.get_json_by_jsonflie('old','rtmp_summary_hour_sum') || {
+			sum : 0,
+			flu : 0
+		};;
+		self.hls_summary_hour_sum = tools.get_json_by_jsonflie('old','hls_summary_hour_sum') || {
+			sum : 0,
+			flu : 0
+		};
+
 		self.rtmp_history_flu_summary_hour = tools.get_json_by_jsonflie('old','rtmp_history_flu_summary_hour') || {};//从文件中读取历史数据
 		self.hls_history_flu_summary_hour = tools.get_json_by_jsonflie('old','hls_history_flu_summary_hour') || {};//从文件中读取历史数据
 		self.rtmp_history_flu_summary_sum_hour = tools.get_json_by_jsonflie('old','rtmp_history_flu_summary_sum_hour') || [];
 		self.hls_history_flu_summary_sum_hour = tools.get_json_by_jsonflie('old','hls_history_flu_summary_sum_hour') || [];
-	
 		
 		setInterval(function(){	
 			var deletNum =  60*24;//24小时
@@ -195,53 +210,42 @@ var summary = function(config){
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.ALL,deletNum);
-
-			// self.rtmp_history_flu_summary = getHistory(self.rtmp_summary_minitue,self.rtmp_history_flu_summary,deletNum);
-			// self.hls_history_flu_summary = getHistory(self.hls_summary_minitue,self.hls_history_flu_summary,deletNum);
-			// self.rtmp_history_flu_summary_sum = getAllHistory(self.rtmp_summary_mintiue_sum,self.rtmp_history_flu_summary_sum,deletNum);
-			// self.hls_history_flu_summary_sum = getAllHistory(self.hls_summary_mintiue_sum,self.hls_history_flu_summary_sum,deletNum);
-
+		
 			self.rtmp_summary_minitue = {};
 			self.hls_summary_minitue = {};
 			self.rtmp_summary_mintiue_sum = {
-					sum : 0,
-					flu : 0	,
-					data : []
+				sum : 0,
+				flu : 0	,
+				data : []
 			};
 			self.hls_summary_mintiue_sum = {
-					sum : 0,
-					flu : 0	,
-					data : []
+				sum : 0,
+				flu : 0	,
+				data : []
 			};
 			if(tools.curr_time("HH:mm") === "00:00"){
-				self.save_record()
+				var deletNum = 30;//30天
+				self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.STREAM,deletNum);
+				self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
+				self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
+				self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.ALL,deletNum);
+			
+				self.rtmp_summary_hour = {};
+				self.hls_summary_hour = {};
+				self.rtmp_summary_hour_sum = {
+					sum : 0,
+					flu : 0
+				};
+				self.hls_summary_hour_sum = {
+					sum : 0,
+					flu : 0
+				};
+
+				self.save_record(function(){
+					log.info('save_record success');
+				});
 			}
-		},60*1000);	
-
-		setInterval(function(){	
-			var deletNum =  24*30;//30天
-			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.STREAM,deletNum);
-			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
-			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
-			self.add_history_for_time(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,SUMMARY_SEARCH.ALL,deletNum);
-			// self.rtmp_history_flu_summary_hour = getHistory(self.rtmp_summary_hour,self.rtmp_history_flu_summary_hour,deletNum);
-			// self.hls_history_flu_summary_hour = getHistory(self.hls_summary_hour,self.hls_history_flu_summary_hour,deletNum);
-			// self.rtmp_history_flu_summary_sum_hour = getAllHistory(self.rtmp_summary_hour_sum,self.rtmp_history_flu_summary_sum_hour,deletNum);
-			// self.hls_history_flu_summary_sum_hour = getAllHistory(self.hls_summary_hour_sum,self.hls_history_flu_summary_sum_hour,deletNum);
-
-			self.rtmp_summary_hour = {};
-			self.hls_summary_hour = {};
-			self.rtmp_summary_hour_sum = {
-					sum : 0,
-					flu : 0	,
-					data : []
-			};
-			self.hls_summary_hour_sum = {
-					sum : 0,
-					flu : 0	,
-					data : []
-			};
-		},60*60*24*1000);			
+		},MINUTE);
 		
 		function getHistory(para,his,deletNum){
 			var para = para;
@@ -287,7 +291,8 @@ var summary = function(config){
 		}
 
 		function getAllHistory(para,his,deletNum){};
-	}
+	};
+
 	self.add_history_for_time = function(t,d_t,s_t,deletNum){		
 		var deletNum = deletNum;	
 		if(s_t == SUMMARY_SEARCH.STREAM){
@@ -320,14 +325,13 @@ var summary = function(config){
 						sum:[]
 					};
 					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
-						
 						one[app][stream].times.shift();
 						one[app][stream].flu.shift();
 						one[app][stream].sum.shift();
 					}
 					
 					one[app][stream].times.push(new Date().getTime());
-					one[app][stream].flu.push(tmp.sum === 0 ? 0 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100);
+					one[app][stream].flu.push(tmp.sum === 0 ? 100 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100);
 					one[app][stream].sum.push(tmp.sum);	
 				}
 			}
@@ -335,15 +339,14 @@ var summary = function(config){
 			for(var app in one){
 				for(var stream in one[app]){
 					if(!para[app] || !para[app][stream]){
-					while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
-						
-						one[app][stream].times.shift();
-						one[app][stream].flu.shift();
-						one[app][stream].sum.shift();	
-					}
+						while(one[app][stream].times.length > deletNum){//超过48小时,从数组头去掉超出的数据
+							one[app][stream].times.shift();
+							one[app][stream].flu.shift();
+							one[app][stream].sum.shift();	
+						}
 					
 						one[app][stream].times.push(new Date().getTime());
-						one[app][stream].flu.push(0);
+						one[app][stream].flu.push(100);
 						one[app][stream].sum.push(0);	
 					}
 				}
@@ -353,26 +356,25 @@ var summary = function(config){
 			if(t == SUMMARY_TYPE.MINUTE ){
 				if(d_t == DATA_TYPE.RTMP){
 					var para = self.rtmp_summary_mintiue_sum;
-					var one = self.rtmp_history_flu_summary_sum || [];
+					var one = self.rtmp_history_flu_summary_sum;
 				}else{
 					var para = self.hls_summary_mintiue_sum;
-					var one = self.hls_history_flu_summary_sum || [];
+					var one = self.hls_history_flu_summary_sum;
 				}
 			}	
 			else if(t == SUMMARY_TYPE.HOUR){
 				if(d_t == DATA_TYPE.RTMP){
 					var para = self.rtmp_summary_hour_sum;
-					var one = self.rtmp_history_flu_summary_sum_hour || [];
+					var one = self.rtmp_history_flu_summary_sum_hour;
 				}else{
 					var para = self.hls_summary_hour_sum;
-					var one = self.hls_history_flu_summary_sum_hour || []
+					var one = self.hls_history_flu_summary_sum_hour;
 				}
 			}	
-		
 			//sum			
 			one.push({
 				time : new Date().getTime(),
-				flu : para.sum === 0 ? 0 : (parseFloat((para.flu / para.sum).toFixed(2)) * 100),
+				flu : para.sum === 0 ? 100 : (parseFloat((para.flu / para.sum).toFixed(2)) * 100),
 				sum : para.sum
 			});
 	
@@ -384,18 +386,33 @@ var summary = function(config){
 	};
 
 	self.get_rtmp_fluency_record = function(start,end){	
-		return self.get_fluency_record(self.rtmp_history_flu_summary_sum,start,end);
+		return self.get_fluency_record(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,start,end);
 	};
 	self.get_hls_fluency_record = function(start,end){	
-		return self.get_fluency_record(self.hls_history_flu_summary_sum,start,end);
+		return self.get_fluency_record(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,start,end);
 	};
 	self.get_rtmp_fluency_record_hour = function(start,end){	
-		return self.get_fluency_record(self.rtmp_history_flu_summary_sum_hour,start,end);
+		return self.get_fluency_record(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,start,end);
 	};
 	self.get_hls_fluency_record_hour = function(start,end){	
-		return self.get_fluency_record(self.hls_history_flu_summary_sum_hour,start,end);
+		return self.get_fluency_record(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,start,end);
 	};
-	self.get_fluency_record = function(his,start,end){
+	
+	self.get_fluency_record = function(t ,d_t ,start,end){
+		if(t == SUMMARY_TYPE.MINUTE ){
+			if(d_t == DATA_TYPE.RTMP){
+				var his = self.rtmp_history_flu_summary_sum || [];
+			}else{
+				var his = self.hls_history_flu_summary_sum || [];
+			}
+		}	
+		else if(t == SUMMARY_TYPE.HOUR){
+			if(d_t == DATA_TYPE.RTMP){
+				var his = self.rtmp_history_flu_summary_sum_hour || [];
+			}else{
+				var his = self.hls_history_flu_summary_sum_hour || []
+			}
+		}
 		var record = {
 			times : [],
 			flu : [],
@@ -447,21 +464,36 @@ var summary = function(config){
 
 	self.get_rtmp_flu_record_for_app_stream = function(app,stream,start,end){
 		
-		return self.get_flu_record_for_app_stream(self.rtmp_history_flu_summary,app,stream,start,end);
+		return self.get_flu_record_for_app_stream(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,app,stream,start,end);
 	};
 	self.get_hls_flu_record_for_app_stream = function(app,stream,start,end){
 		
-		return self.get_flu_record_for_app_stream(self.hls_history_flu_summary,app,stream,start,end);
+		return self.get_flu_record_for_app_stream(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,app,stream,start,end);
 	};
 	self.get_rtmp_flu_record_for_app_stream_hour = function(app,stream,start,end){
 		
-		return self.get_flu_record_for_app_stream(self.rtmp_history_flu_summary_hour,app,stream,start,end);
+		return self.get_flu_record_for_app_stream(SUMMARY_TYPE.HOUR,DATA_TYPE.RTMP,app,stream,start,end);
 	};
 	self.get_hls_flu_record_for_app_stream_hour = function(app,stream,start,end){
 		
-		return self.get_flu_record_for_app_stream(self.hls_history_flu_summary_hour,app,stream,start,end);
+		return self.get_flu_record_for_app_stream(SUMMARY_TYPE.HOUR,DATA_TYPE.HLS,app,stream,start,end);
 	};
-	self.get_flu_record_for_app_stream = function(his,app,stream,start,end){
+	self.get_flu_record_for_app_stream = function(t,d_t,app,stream,start,end){
+		if(t == SUMMARY_TYPE.MINUTE ){
+			if(d_t == DATA_TYPE.RTMP){
+				var his = self.rtmp_history_flu_summary;
+			}else{
+				var his = self.hls_history_flu_summary;
+			}
+		}
+		else if(t == SUMMARY_TYPE.HOUR){
+			if(d_t == DATA_TYPE.RTMP){
+				var his = self.rtmp_history_flu_summary_hour;
+			}else{
+				var his = self.hls_history_flu_summary_hour;
+			}
+		}	
+
 		var res = {
 			times:[],
 			flu :[],
@@ -527,7 +559,7 @@ var summary = function(config){
 				var tmp = para[app][stream];
 				
 				var time = new Date().getTime();
-				var flu = tmp.sum === 0 ? 0 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100;
+				var flu = tmp.sum === 0 ? 100 : parseFloat((tmp.flu / tmp.sum).toFixed(2)) * 100;
 				var data = tmp.data;
 				var sum = tmp.sum ;
 
