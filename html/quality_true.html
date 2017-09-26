@@ -47,7 +47,7 @@
 				</div>
 				<div role="tabpanel" class="tab-pane" id="tab2">
 					<div class="search u-text1">
-						<p>最近一分钟的流畅度排行</p>
+						<p>最近一分钟的流畅度排行<span class="u-sizeNum"></span></p>
 					</div>
 					<div class="table-box">
 						<table class="table  g-table">
@@ -58,7 +58,7 @@
 				</div>
 				<div role="tabpanel" class="tab-pane " id="tab3">
 					<div class="search u-text1">
-						<p>最近一分钟的流畅度排行</p>
+						<p>最近一分钟的流畅度排行<span class="u-sizeNum"></span></p>
 					</div>
 					<div class="table-box">
 						<table class="table g-table">
@@ -97,8 +97,8 @@
 			GLOBAL_FLAG = false;//是否带条件查询
 			GLOBAL_RangeSearch_FLAG = true;//是否更新表格
 
-				var url = 'http://127.0.0.1:8080/get_mps_summary';
-			//	var url = 'http://114.55.237.92:8080/get_mps_summary';
+			//	var url = 'http://127.0.0.1:8080/get_mps_summary';
+				var url = 'http://114.55.237.92:8080/get_mps_summary';
 			
 			
 			var __url = function(json) {
@@ -232,12 +232,16 @@
 				if(hlsRange){
 					json.hlsRange = hlsRange;
 				}
-				$.getJSON(__url(json), function(json) {					
+				$.getJSON(__url(json), function(json) {	console.log(json.data);
+					if(json.data.Flag != 100){
+						location.href="/login.html"
+						return; 
+					}				
 					if(json.code != 0){
 						console.log('update_quality_data err :' + json.code);
 					}else{
 						var real_data = json.real_data ? json.real_data : null;						
-						var data = json.data;
+						var data = json.data.data;
 						var avg_data = null;
 						if(data){
 							//console.log(data);
@@ -555,14 +559,16 @@
 											<td>操作</td> ';
 							$(container1).html(html);
 							var html = '';
+							var sumSize = 0;
 							for(var i = 0; i < array.length; i++){
+								
 								var href = 'http://demo.aodianyun.com/lss/hlsplaytest/player.html?addr=';
 								if(array[i].data[0].ProtocolType == "rtmp"){
 									href +='rtmp://'+array[i].data[0].PlayDomainName+'/'+array[i].data[0].App+'/'+array[i].data[0].Stream;
 								}else{
 									href +='http://'+array[i].data[0].PlayDomainName+'/'+array[i].data[0].App+'/'+array[i].data[0].Stream+'.m3u8';
 								}
-
+								sumSize += parseInt(array[i].sum) ;
 								html += ' <tr>\
 										<td class="u-text3">'+array[i].flu.toFixed(0)+'%</td>\
 										<td class="u-text3">'+array[i].sum+'</td>\
@@ -578,6 +584,7 @@
 										</td></tr>';									
 							}
 							$(container2).html(html);
+							$(container2).parents('.table-box').siblings('.search').find('.u-sizeNum').html(' 总人数：'+sumSize);
 							$('.u-detail-btn',container2).on('click',function(){
 								var index = parseInt($(this).attr('data-index'));
 								if(array[index].data.length > 0){

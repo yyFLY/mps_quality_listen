@@ -9,10 +9,10 @@
 "undefined" != typeof tools ? 'tools yes' : tools = require('./lib/tools').New();
 "undefined" != typeof log ? 'log yes' : log = require('./lib/log').New();
 "undefined" != typeof local_info ? 'local_info yes' : local_info = require('./status/local_info').New(config.status_threshold);
-"undefined" != typeof express ? 'express yes' : express = require('express');
-"undefined" != typeof session ? 'session yes' : session = require('express-session');
 
-// "undefined" != typeof cron ? 'cron yes' : cron = require('cron').CronJob;
+"undefined" != typeof crypto ? 'crypto yes' : crypto = require('crypto');
+"undefined" != typeof request ? 'request yes' : request = require('request');
+"undefined" != typeof md5 ? 'md5 yes' : md5 = require('md5');
 
 //setTimeout(function(){
 //	process.exit(10);
@@ -21,8 +21,10 @@
 
 //let require******************************************
 var mq = require("./mq").mq(config.mq);
+var playerInfo_mq = require("./mq").mq(config.playerInfo_mq);
 var http_server = require('./lib/http_server').New(config.http);//http svr
 var summary = require('./summary.js').New();
+var playerSummary = require('./playerSummary.js').New();
 
 //event******************************************
 //proess quit******************************************
@@ -50,10 +52,61 @@ setInterval(function(){
 	local_info.update_status(reqs?reqs/PROCESS_STATUS_UPDATE_INTERVAL:0);
 	local_info.check_warn();
 },PROCESS_STATUS_UPDATE_INTERVAL);
+// 解析cookie
+var parseCookie = function(cookie) {
+        var cookies = {};
+        if (!cookie) {
+                return cookie;
+        }
+        var list = cookie.split(';');
+        for (var i = 0; i < list.length; i++) {
+                var pair = list[i].split('=');
+                cookies[pair[0].trim()] = pair[1];
+        }
+        return cookies;
+};
+// cookie 序列化
+// cookie 序列化
+// cookie 格式：name=value; Path=/; Expires=Sun, 23-Apr-23 09:01:35 GMT; Domain=.domain.com;
+function serialize(name, val, opt) {
+		var pairs = [name + '=' + val];
+		opt = opt || {};
+
+		if (opt.maxAge) pairs.push('Max-Age=' + opt.maxAge);
+		if (opt.domain) pairs.push('Domain=' + opt.domain);
+		if (opt.path) pairs.push('Path=' + opt.path);
+		if (opt.expires) pairs.push('Expires=' + opt.exppires.toUTCString());
+		if (opt.httpOnly) pairs.push('HttpOnly');
+		if (opt.secure) pairs.push('Secure');
+
+		return pairs.join(';');
+}
+//加密
+function decode(key,encrypt_text,iv) {
+	var key = new Buffer(key);
+    var iv = new Buffer(iv ? iv : 0);
+    var decipher = crypto.createDecipheriv('des-cbc', key, iv);
+    decipher.setAutoPadding(true);
+    var txt = decipher.update(encrypt_text, 'base64', 'utf8');
+    txt += decipher.final('utf8');
+    return txt;
+}
+//解密
+function encode(key,plaintext,iv) {
+	var key = new Buffer(key);
+	var iv = new Buffer(iv ? iv : key);
+	var cipher = crypto.createCipheriv('des-cbc',key, iv);
+	cipher.setAutoPadding(true) //default true
+	var ciph = cipher.update(plaintext, 'utf8', 'base64');
+	ciph += cipher.final('base64');
+	return ciph;
+}
+
+
 
 //http_svr
 var g_data = null;
-http_server.on('deal_msg', function(path,msg,req_ip,callback) {
+http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
 	var data = tools.get_json_parse(msg);
 	if(!data){
 		log.warn('http server deal_msg get_json_parse err:'+msg+', req_ip:'+req_ip);
@@ -67,11 +120,56 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 		code : 0
 	};
 	var code = 200;
+	
 
 	switch (path){
 		case '/':
 			res.data = g_data;
 			break;
+		case '/login':				
+			var u_email  = data.email;
+			var u_password  = data.password;//接收用户名密码
+			var callme = {Flag:110,FlagString:'登录失败',data:{}};
+
+
+			var str = u_password;
+			var md5 = require("md5");
+			var u_md5password = md5(str);//密码md5加密
+		
+
+
+			var key = 'JFswrLIT';
+			var str = '{"Tag":"login","email":"'+u_email+'","password":"'+u_md5password+'","Api":"admin\/account"}';
+			var iv = 'JFswrLIT';
+			var enc = encode(key,str, iv);//内容对称加密后进行发送	
+
+			var requestData = enc ;
+			var url= "http://privateapi.aodianyun.com/index.php";
+			request({
+				url: url,
+				method: "post",
+				json: true,
+				headers: {
+					"content-type": "application/json",
+				},
+				body: requestData
+			},requestData, function(error, response, body) {					
+					if(body.Flag == 100){	
+						callme.Flag = 100 ;
+						callme.FlagString = '登录成功';
+    					resp.setHeader('Set-Cookie', serialize('isVisit','1'));	
+						
+						res.data = callme;
+						callback(res,code);
+					}
+					else{						
+    					resp.setHeader('Set-Cookie', serialize('isVisit','0'));
+						res.data = callme;
+						callback(res,code);
+					}
+				
+			}); 
+			return;
 		case '/get_sum':
 			res.data = summary.sum;
 			break;
@@ -109,6 +207,13 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 			res.data = summary.get_rtmp_flu_range_for_app_stream_minitue();
 			break;
 		case '/get_mps_summary':
+			req.cookies = parseCookie(req.headers.cookie);		
+
+			if(req.cookies.isVisit == null || req.cookies.isVisit != 1){
+				var callmes = {Flag:120,FlagString:'请登录',data:{}};
+				res.data = callmes;
+				break;
+			}
 			var returnData = {rtmp_minitue:{},hls_minitue:{},
 			rtmp_range_minite:[],hls_range_minite:[],rtmp_hour:[],hls_hour:[]};
 		
@@ -138,7 +243,9 @@ http_server.on('deal_msg', function(path,msg,req_ip,callback) {
 			if(data.hlsRange){
 				returnData.hls_range_minite = summary.get_hls_flu_range_for_app_stream_minitue();
 			}	
-			res.data = returnData;
+			
+			var callmes = {Flag:100,FlagString:'查询成功',data:returnData};
+			res.data =  callmes;
 			var returnData = '';
 			break;
 		default :

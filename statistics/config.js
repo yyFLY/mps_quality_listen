@@ -10,6 +10,14 @@ exports.config = {
 		subKey : "",
 		maxSize : 800*1024
 	},
+	playerInfo_mq : {
+		mq_host : "mqmps.aodianyun.com",
+		mq_port : 5142,
+		topic : "Mps_PlayStatusInfo",
+		partition : [0],
+		subKey : "",
+		maxSize : 800*1024
+	},
 	html_path : '../html',
 	status_threshold : {
 		max_cpu : 60,

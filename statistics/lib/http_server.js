@@ -64,6 +64,9 @@ function http_server(config){
 
 util.inherits(http_server, events.EventEmitter);
 
+http_server.httpReq = null;
+http_server.httpRes = null;
+
 http_server.prototype.start = function(){
 	
 	var self = this;
@@ -84,6 +87,9 @@ http_server.prototype.start = function(){
 	};
 	
 	self.server = http.createServer(function(req,resp){
+		http_server.httpReq = req;
+		http_server.httpRes = resp;
+		
 		resp.setTimeout(self.timeout*1000, function(){});
 		self.reqs += 1;
 		self.reqs_sum += 1;
@@ -91,6 +97,7 @@ http_server.prototype.start = function(){
 		var url_parse = url_modle.parse(req.url, true);
 		var pathname = url_parse.pathname;
 		var t = null;
+		var cookies = req.cookies;
 		if(pathname.lastIndexOf('.') !== -1){
 			t = pathname.substr(pathname.lastIndexOf('.')+1);
 		}
@@ -121,7 +128,7 @@ http_server.prototype.start = function(){
             	});
             });
       }else if (req.method.toUpperCase() == 'GET') {
-            self.emit('deal_msg',pathname,JSON.stringify(url_parse.query),req_ip,function(data,code,bfile){
+            self.emit('deal_msg',pathname,JSON.stringify(url_parse.query),req_ip,req,resp,function(data,code,bfile){
             	if(bfile){
 					resp.writeHead(200, {
 						'Content-Type': t?self.types[t]:"text/plain",

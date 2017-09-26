@@ -42,6 +42,9 @@ var summary = function(config){
 	//统计每分钟hls的流畅度 按app stream查询
 	self.hls_history_flu_summary = {};
 
+	//最近一分钟的流水记录
+	self.lastminitue_rtmp_summary_minitue = {};
+	self.lastminitue_hls_summary_minitue = {};
 	//总的流畅度
 	self.rtmp_summary_mintiue_sum = {
 		sum : 0,
@@ -210,7 +213,10 @@ var summary = function(config){
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.STREAM,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.HLS,SUMMARY_SEARCH.ALL,deletNum);
 			self.add_history_for_time(SUMMARY_TYPE.MINUTE,DATA_TYPE.RTMP,SUMMARY_SEARCH.ALL,deletNum);
-		
+			
+			self.lastminitue_rtmp_summary_minitue = cloneObj(self.rtmp_summary_minitue);
+			self.lastminitue_hls_summary_minitue = cloneObj(self.hls_summary_minitue);
+
 			self.rtmp_summary_minitue = {};
 			self.hls_summary_minitue = {};
 			self.rtmp_summary_mintiue_sum = {
@@ -542,12 +548,12 @@ var summary = function(config){
 
 
 	self.get_rtmp_flu_range_for_app_stream_minitue = function(){
-		var para = self.rtmp_summary_minitue;
+		var para = self.lastminitue_rtmp_summary_minitue;
 		var array = getArrayForMinitue(para);
 		return array.sort(compare('flu'));
 	}
 	self.get_hls_flu_range_for_app_stream_minitue = function(){
-		var para = self.hls_summary_minitue;
+		var para = self.lastminitue_hls_summary_minitue;
 		var array = getArrayForMinitue(para);
 		return array.sort(compare('flu'));
 	}
@@ -578,6 +584,13 @@ var summary = function(config){
 		}
 			
 	}
+	//深拷贝
+	var cloneObj = function(obj){
+		var o = obj instanceof Array ? [] : {};
+		for(var k in obj) 
+			o[k] = typeof obj[k] === Object ? deepClone(obj[k]) : obj[k];
+		return o;
+	};
 };
 
 exports.New = function(config){
