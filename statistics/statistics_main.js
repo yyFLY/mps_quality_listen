@@ -21,9 +21,10 @@
 
 //let require******************************************
 var mq = require("./mq").mq(config.mq);
-//var playerInfo_mq = require("./mq").mq(config.playerInfo_mq);
+var playerInfo_mq = require("./mq").mq(config.playerInfo_mq);
 var http_server = require('./lib/http_server').New(config.http);//http svr
 var summary = require('./summary.js').New();
+var playerSummary = require('./playerSummary.js').New();
 
 //event******************************************
 //proess quit******************************************
@@ -100,13 +101,9 @@ function encode(key,plaintext,iv) {
 	ciph += cipher.final('base64');
 	return ciph;
 }
-
-
-
 //http_svr
 var g_data = null;
 http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
-		
 	var data = tools.get_json_parse(msg);
 	if(!data){
 		log.warn('http server deal_msg get_json_parse err:'+msg+', req_ip:'+req_ip);
@@ -128,12 +125,15 @@ http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
 			break;
 		case '/login':				
 			var u_email  = data.email;
-			var u_password  = data.password;//接收用户名密码			
+			var u_password  = data.password;//接收用户名密码
 			var callme = {Flag:110,FlagString:'登录失败',data:{}};
+
 
 			var str = u_password;
 			var md5 = require("md5");
-			var u_md5password = md5(str);//密码md5加密	
+			var u_md5password = md5(str);//密码md5加密
+		
+
 
 			var key = 'JFswrLIT';
 			var str = '{"Tag":"login","email":"'+u_email+'","password":"'+u_md5password+'","Api":"admin\/account"}';
@@ -170,6 +170,49 @@ http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
 		case '/get_sum':
 			res.data = summary.sum;
 			break;
+		case '/get_player_fluency_record':			
+			req.cookies = parseCookie(req.headers.cookie);		
+
+			if(req.cookies == null || req.cookies.isVisit != 1){
+				var callmes = {Flag:120,FlagString:'请登录',data:{}};
+				res.data = callmes;
+				break;
+			}
+
+			var returnData = {rtmp_minitue:{},hls_minitue:{},
+			rtmp_range_minite:[],hls_range_minite:[],rtmp_hour:[],hls_hour:[]};
+		
+			if(data.app && data.stream ){
+				if(data.minSearch){
+					returnData.rtmp_minitue = playerSummary.get_rtmp_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
+					returnData.hls_minitue = playerSummary.get_hls_flu_record_for_app_stream(data.app,data.stream,data.start_time,data.end_time);
+				}
+				if(data.hourSearch){
+					returnData.rtmp_hour = playerSummary.get_rtmp_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
+					returnData.hls_hour = playerSummary.get_hls_flu_record_for_app_stream_hour(data.app,data.stream,data.start_time,data.end_time);
+				}
+			}
+			else{
+				if(data.minSearch){
+					returnData.rtmp_minitue = playerSummary.get_rtmp_fluency_record(data.start_time,data.end_time);
+					returnData.hls_minitue = playerSummary.get_hls_fluency_record(data.start_time,data.end_time);
+				}
+				if(data.hourSearch){
+					returnData.rtmp_hour = playerSummary.get_rtmp_fluency_record_hour(data.start_time,data.end_time);
+					returnData.hls_hour = playerSummary.get_hls_fluency_record_hour(data.start_time,data.end_time);
+				}
+			}
+			if(data.rtmpRange){
+				returnData.rtmp_range_minite = playerSummary.get_rtmp_flu_range_for_app_stream_minitue();
+			}	
+			if(data.hlsRange){
+				returnData.hls_range_minite = playerSummary.get_hls_flu_range_for_app_stream_minitue();
+			}	
+			
+			var callmes = {Flag:100,FlagString:'查询成功',data:returnData};
+			res.data =  callmes;
+			var returnData = '';
+			break;
 		case '/get_fluency_record':
 			res.data = summary.get_fluency_record(data.start_time,data.end_time);
 			break;
@@ -204,8 +247,8 @@ http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
 			res.data = summary.get_rtmp_flu_range_for_app_stream_minitue();
 			break;
 		case '/get_mps_summary':
-			req.cookies = parseCookie(req.headers.cookie);
-		
+			req.cookies = parseCookie(req.headers.cookie);		
+
 			if(req.cookies == null || req.cookies.isVisit != 1){
 				var callmes = {Flag:120,FlagString:'请登录',data:{}};
 				res.data = callmes;
@@ -296,3 +339,26 @@ setInterval(function(){
 	}
 	//log.info('par info:'+JSON.stringify(mq.curr_offest));
 },CHECK_PAR_DIS_INTERVAL);
+
+
+
+//playerInfo_mq
+playerInfo_mq.on('deal_poll_msg',function(msg){
+	if(!msg.body){
+		log.warn('playerInfo_mq no body msg:'+JSON.stringify(msg));
+		return;
+	}
+	var data = tools.get_json_parse(msg.body);
+	
+	if(!data){
+		log.warn('playerInfo_mq deal_msg get_json_parse err, msg:'+msg.body);
+		return;
+	}
+	
+	playerSummary.dealAll(data);
+	g_data = data;
+});
+
+//start******************************************
+playerSummary.init_record();
+playerInfo_mq.start_poll();

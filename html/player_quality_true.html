@@ -1,0 +1,893 @@
+<html lang="zh-CN">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<link href="css/bootstrap.min.css" type="text/css" rel="stylesheet"></link>
+		<link href="css/index.css" type="text/css" rel="stylesheet"></link>
+		<title>质量监控</title>
+		<style>
+			.hide{display:none}
+		</style>
+		<script type="text/javascript" src="js/echarts.min.js"></script>
+	</head>
+
+	<body style="background-color: #404a59;">
+		<div>
+
+			<!-- Nav tabs -->
+			<ul class="nav nav-tabs" role="tablist">
+				<li role="presentation" class="active"><a href="#tab1" aria-controls="tab1" role="tab" data-toggle="tab">播放器加载成功率曲线</a></li>
+				<li role="presentation" class="hide"><a href="#tab2" aria-controls="tab2" role="tab" data-toggle="tab">HLS加载时间播放器加载成功率排行</a></li>
+				<li role="presentation"><a href="#tab3" aria-controls="tab3" role="tab" data-toggle="tab">HLS播放器加载成功率排行</a></li>
+			</ul>
+
+			<!-- Tab panes -->
+			<div class="tab-content">
+				<div role="tabpanel" class="tab-pane active" id="tab1">
+					<div class="search">
+						<p class="u-text1">app stream 都填了才能查出数据。否则查出的是所有数据</p>
+						<p class="u-text1">数据每分钟根据条件更新一次。不想等待可点击按钮，立即更新。</p>
+						<span class="u-text1">app :</span> <input class="app"></input>
+						<span class="u-text1">stream :</span> <input class="stream"></input>
+						<button type="button" class="btn btn-primary">手动立即更新</button>
+					</div>
+					<div id="rtmp_day_chart" class="shape"></div>
+					<div id="hls_day_chart" class="shape"></div>
+					
+					<!--<div id="s_chart" style="height: 33%;width: 110%;position: absolute;top: 33%;left: -6%;"></div>-->
+					
+					<div id="rtmp_month_chart" class="shape" style="width: 51%;position: absolute;left: -1%;"></div>
+					<div id="hls_month_chart"class="shape"  style="width: 51%;position: absolute;left: 49%;"></div>
+					
+				</div>
+				<div role="tabpanel" class="tab-pane" id="tab2">
+					<div class="search u-text1">
+						<p>最近一分钟的播放器加载成功率排行<span class="u-sizeNum"></span></p>
+					</div>
+					<div class="table-box">
+						<table class="table  g-table">
+							<thead class="g-rtmp-range-th u-text2"></thead>
+							<tbody class="g-rtmp-range-tb"><tbody>
+						</table>
+					</div>
+				</div>
+				<div role="tabpanel" class="tab-pane " id="tab3">
+					<div class="search u-text1">
+						<p>最近一分钟的播放器加载成功率排行<span class="u-sizeNum"></span></p>
+					</div>
+					<div class="table-box">
+						<table class="table g-table">
+							<thead class="g-hls-range-th u-text2"></thead>
+							<tbody class="g-hls-range-tb"><tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+		</div>
+		<div class="modal fade f-detail-dialog" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-lg" role="document" style="width:100%">
+				<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">最近一分钟的用户流水</h4>
+				</div>
+				<div class="modal-body">
+					<div class="table-box" style="height:500px">
+						<table class="table  g-table">
+							<thead class="g-detail-th u-text2"></thead>
+							<tbody class="g-detail-tb"><tbody>
+						</table>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+				</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+		<script src="js/jquery.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+		<script type="text/javascript">
+			GLOBAL_FLAG = false;//是否带条件查询
+			GLOBAL_RangeSearch_FLAG = true;//是否更新表格
+
+			//	var url = 'http://127.0.0.1:8080/get_player_fluency_record';
+				var url = 'http://114.55.237.92:8080/get_player_fluency_record';
+			
+			
+			var __url = function(json) {
+				var url_ = url + '?';
+				for(var key in json) {
+					url_ += key + '=' + json[key] + "&";
+				}
+				url_ = url_.substr(0, url_.length - 1);
+				console.log(url_);
+				return url_;
+			};
+
+			//string format
+			String.prototype.format = function(args) {
+				var result = this;
+				if(arguments.length > 0) {
+					if(arguments.length == 1 && typeof(args) == "object") {
+						for(var key in args) {
+							if(args[key] != undefined) {
+								var reg = new RegExp("({" + key + "})", "g");
+								result = result.replace(reg, args[key]);
+							}
+						}
+					} else {
+						for(var i = 0; i < arguments.length; i++) {
+							if(arguments[i] != undefined) {　　　　　　　　　　　　
+								var reg = new RegExp("({)" + i + "(})", "g");
+								result = result.replace(reg, arguments[i]);
+							}
+						}
+					}
+				}
+				return result;
+			};
+			
+			var init = function() {
+				var option = getOption();
+				update_quality_data({time:'day',once:true,app:option.app,stream:option.stream,hourSearch:true});
+				update_quality_data({time:'minute',once:true,app:option.app,stream:option.stream,minSearch:true});
+				
+				 setInterval(function(){
+					var option = getOption();
+					var opt = {time:'minute',once:false,app:option.app,stream:option.stream,minSearch:true};
+					var index = $('.nav-tabs li.active').index();
+					if(index == 1){
+						opt.rtmpRange = true;
+					}else if(index == 2){
+						opt.hlsRange = true;
+					}
+				 	update_quality_data(opt);
+				 },60 * 1000);
+				
+				setInterval(function(){
+					var option = getOption();
+				  	update_quality_data({time:'day',once:false,app:option.app,stream:option.stream,hourSearch:true});
+				  },24*60*60*1000);
+			};
+			
+			var getOption = function(){
+				var option ={
+					app : '',
+					stream : ''
+				} 
+				if(GLOBAL_FLAG){
+					option.app = $('.app').val();
+					option.stream = $('.stream').val();									
+				}
+				return option;
+			}
+			var legend_data = [{
+				name : '播放器加载时间(单位：s)',
+				icon : 'circle'
+			}];
+			var hls_legend_data = [{
+				name : '播放器加载成功率(单位：%)',
+				icon : 'circle'
+			},{
+				name : '在线总数',
+				icon : 'circle'
+			}];
+			
+			var all_legend_data = [{
+				name : '播放器加载时间(单位：s)',
+				icon : 'circle'
+			}];
+			
+			var rtmp_colors = ['#00B7FF','#D43F3A','#4CAE4C','#FF8C00'];
+			var hls_colors = ['#c23531','#2f4554', '#61a0a8'];
+
+
+
+			
+			var all_colors = ['#00B7FF','#D43F3A','#4CAE4C','#FF8C00'];
+			
+			var charts = [
+							echarts.init(document.getElementById('rtmp_day_chart')),
+							echarts.init(document.getElementById('hls_day_chart')),
+							echarts.init(document.getElementById('rtmp_month_chart')),
+							echarts.init(document.getElementById('hls_month_chart'))
+						];
+			var update_quality_data = function(opt){
+				
+				var time = typeof opt.time != 'undefined' ? opt.time : '';
+				var once = typeof opt.once != 'undefined' ? opt.once : false;
+				var app = typeof opt.app != 'undefined' ? opt.app : '';
+				var stream = typeof opt.stream != 'undefined' ? opt.stream : '';
+				var hourSearch = typeof opt.hourSearch != 'undefined' ? opt.hourSearch : false; 
+				var minSearch = typeof opt.minSearch != 'undefined' ? opt.minSearch : false; 
+				var rtmpRange = typeof opt.rtmpRange != 'undefined' ? opt.rtmpRange : false;  
+				var hlsRange = typeof opt.hlsRange != 'undefined' ? opt.hlsRange : false; 
+				
+
+				var json = {
+					key: 'get_mps_summary'
+				};			
+				if(app.length > 0){
+					json.app = app;
+				}
+				if(stream.length > 0){
+					json.stream = stream;
+				}
+				if(hourSearch){
+					json.hourSearch = hourSearch;
+				}
+				if(minSearch){
+					json.minSearch = minSearch;
+				}
+				if(rtmpRange){
+					json.rtmpRange = rtmpRange;
+				}
+				if(hlsRange){
+					json.hlsRange = hlsRange;
+				}
+				$.getJSON(__url(json), function(json) {	console.log(json.data);
+					if(json.data == null || json.data.Flag != 100){
+						location.href="/login.html"
+						return; 
+					}				
+					if(json.code != 0){
+						console.log('update_quality_data err :' + json.code);
+					}else{
+						var real_data = json.real_data ? json.real_data : null;						
+						var data = json.data.data;
+						var avg_data = null;
+						if(data){
+							//console.log(data);
+							if(data.length == 0){
+								return;
+							}
+							var avg_data_tmp = {
+								rtmp : [0,0,0],
+								hls : [0,0,0,0]
+							};
+							avg_data = [0];
+							
+					
+							avg_data[0] = [0];
+							if(typeof data.rtmp_range_minite != 'undefined' ){
+								var index = $('.nav-tabs li.active').index();
+								if(index == 1 || GLOBAL_RangeSearch_FLAG){
+									setRangeTable(data.rtmp_range_minite,'.g-rtmp-range-th','.g-rtmp-range-tb')//处理表格
+							   }
+							   if(index == 2 || GLOBAL_RangeSearch_FLAG){
+									setRangeTable(data.hls_range_minite,'.g-hls-range-th','.g-hls-range-tb')//处理表格
+							   }
+								GLOBAL_RangeSearch_FLAG = false; 
+							}
+							
+						}					
+						if(once){
+							if(time == 'day'){
+								update_chart('rtmp',charts[2],rtmp_colors,'HLS加载时间质量监控/月',data.hls_hour.times ?data.hls_hour.times:[] ,data.hls_hour.sum ?data.hls_hour.sum:[] ,[
+									{
+										name:'播放器加载时间',
+										type:'line',
+										smooth:true,
+										data: data.hls_hour.playerLoadTime ? data.hls_hour.playerLoadTime : [],
+										symbolSize : 10,
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'},
+												{type: 'max', name: '最高'}
+											]
+										},
+										markLine: {
+											label : {
+												normal : {
+													formatter: '{b}: {c}'
+												}
+											},
+											data: [
+												{type: 'average', name: '平均'}
+											]
+										}
+									}
+								],legend_data,'300px',avg_data,true);
+								
+								update_chart('hls',charts[3],rtmp_colors,'HLS加载成功率质量监控/月',data.hls_hour.times ?data.hls_hour.times:[],data.hls_hour.sum ?data.hls_hour.sum:[] ,[
+									{
+										name:'播放器加载成功率',
+										type:'line',
+										smooth:true,
+										data: data.hls_hour.successSum ? data.hls_hour.successSum : [],
+										symbolSize : 10,
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'},
+												{type: 'max', name: '最高'}
+											]
+										},
+										markLine: {
+											label : {
+												normal : {
+													formatter: '{b}: {c}'
+												}
+											},
+											data: [
+												{type: 'average', name: '平均'}
+											]
+										}
+									}
+								],hls_legend_data,'300px',avg_data,true);
+							}else if(time == 'minute'){
+								update_charts_of_day('rtmp',charts[0],rtmp_colors,'HLS加载时间质量监控/天',data.hls_minitue.times ?data.hls_minitue.times:[] ,data.hls_minitue.sum ?data.hls_minitue.sum:[], [
+									{
+										name:'播放器加载时间(单位：s)',
+										type:'line',
+										data: data.hls_minitue.playerLoadTime ? data.hls_minitue.playerLoadTime : [], 
+										smooth:true,
+										symbol: 'none',
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'},
+											]
+										},
+										xAxisIndex: 0,
+										yAxisIndex: 0
+									}
+								],legend_data,null,avg_data,true,[
+									{x: '4%', y: '15%', width: '90%', height: '64%'}
+								]);
+								
+								update_charts_of_day('hls',charts[1],rtmp_colors,'HLS加载成功率质量监控/天',data.hls_minitue.times ?data.hls_minitue.times:[],data.hls_minitue.sum ?data.hls_minitue.sum:[],[
+									{
+										name:'播放器加载成功率(单位：%)',
+										type:'line',
+										smooth:true,
+										data: data.hls_minitue.successSum ? data.hls_minitue.successSum : [],
+										symbolSize : 0,
+										markPoint: {
+											data: [
+												{type: 'min', name: '最低'}
+											]
+										},
+										xAxisIndex: 0,
+										yAxisIndex: 0
+									}
+								],hls_legend_data,null,avg_data,true,[
+									{x: '4%', y: '15%', width: '90%', height: '64%'}
+								]);
+							}
+						}else{
+							
+
+							if(time == 'day'){
+								
+								var rtmpSum = data.hls_hour.sum;
+								var hlsSum = data.hls_hour.sum;
+
+								charts[2].setOption({
+									series : [
+										{
+											name:'播放器加载时间',
+											type:'line',
+											data: data.hls_hour.successSum ? data.hls_hour.successSum : [],
+											symbolSize : 10,
+											markPoint: {
+												data: [
+													{type: 'min', name: '最低'},
+													{type: 'max', name: '最高'}
+												]
+											},
+											markLine: {
+												label : {
+													normal : {
+														formatter: '{b}: {c}'
+													}
+												},
+												data: [
+													{type: 'average', name: '平均'}
+												]
+											}
+										}
+									],
+									xAxis : {
+										data : data.hls_hour.times
+									},
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = rtmpSum;
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+											var res = param.name+'</br>播放器加载时间：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return res;
+										},
+									},
+									animation : false
+								});
+								
+								
+								charts[3].setOption({
+									legend: {
+										formatter : function(name){
+											switch (name){
+												case '播放器加载成功率':
+													return '播放器加载成功率 | '+avg_data[0];
+												default :
+													return '未知';
+											}
+										}
+									},
+									series : [
+										{
+											name:'上行ts',
+											type:'line',
+											data: data.hls_hour.successSum ? data.hls_hour.successSum : [],
+											symbolSize : 10,
+											markPoint: {
+												data: [
+													{type: 'min', name: '最低'},
+													{type: 'max', name: '最高'}
+												]
+											},
+											markLine: {
+												label : {
+													normal : {
+														formatter: '{b}: {c}'
+													}
+												},
+												data: [
+													{type: 'average', name: '平均'}
+												]
+											}
+										}
+									],
+									xAxis : {
+										data : data.hls_hour.times
+									},
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = hlsSum;
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+											var res = param.name+'</br>播放器加载成功率：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return res;
+										},
+									},
+									animation : false
+								});
+								
+							}else{
+								day_options.rtmp.xAxis[0].data = data.hls_minitue.times;
+								day_options.hls.xAxis[0].data = data.hls_minitue.times;
+								day_options.rtmp.series[0].data = data.hls_minitue.playerLoadTime;
+								day_options.hls.series[0].data = data.hls_minitue.successSum;
+								var rtmpSum = data.hls_minitue.sum;
+								var hlsSum = data.hls_minitue.sum;
+
+								charts[0].setOption({
+									legend: {
+										formatter : function(name){
+											switch (name){
+												case '播放器加载成功率':
+													return '播放器加载成功率 | '+avg_data[0]+'%';
+												default :
+													return '未知';
+											}
+										}
+									},
+									series : day_options.rtmp.series,
+									xAxis : day_options.rtmp.xAxis,
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = rtmpSum;
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+											var res = param.name+'</br>播放器加载成功率：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return  res;
+										},
+									},
+									animation : false
+								});
+								
+								charts[1].setOption({
+									legend: {
+										formatter : function(name){
+											switch (name){
+												case '播放器加载成功率':
+													return '播放器加载成功率 | '+avg_data[0]+'%';
+												default :
+													return '未知';
+											}
+										}
+									},
+									tooltip: {
+										trigger: 'axis',
+										axisPointer  : {
+											lineStyle :{
+												color : '#FFF'
+											}
+										},
+										formatter: function (param) {
+											var sum = hlsSum;	
+											param = param[0];
+											if(sum.length <= 0 || typeof param == "undefined"){return '';}
+											var res = param.name+'</br>播放器加载成功率：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											return  res;
+										},
+									},
+									series : day_options.hls.series,
+									xAxis : day_options.hls.xAxis,
+									animation : false
+								});
+								
+							}
+						}
+
+						function setRangeTable(array,container1,container2){
+							var array = array ;
+							var html = ' \
+											<td>播放器加载成功率</td>\
+											<td>评价加载时间</td>\
+											<td>人数</td>\
+											<td>奥点ID</td>\
+											<td>App</td>\
+											<td>Stream</td>\
+											<td>MPSId</td>\
+											<td>播放域名</td>\
+											<td>播放ID</td>\
+											<td>Website</td>\
+											<td>操作</td> ';
+							$(container1).html(html);
+							var html = '';
+							var sumSize = 0;
+							for(var i = 0; i < array.length; i++){
+								
+								var href = 'http://demo.aodianyun.com/lss/hlsplaytest/player.html?addr=';
+								if(array[i].data[0].ProtocolType == "rtmp"){
+									href +='rtmp://'+array[i].data[0].PlayDomainName+'/'+array[i].data[0].App+'/'+array[i].data[0].Stream;
+								}else{
+									href +='http://'+array[i].data[0].PlayDomainName+'/'+array[i].data[0].App+'/'+array[i].data[0].Stream+'.m3u8';
+								}
+								sumSize += parseInt(array[i].sum) ;
+								html += ' <tr>\
+										<td class="u-text3">'+(array[i].successSum*100).toFixed(2)+'%</td>\
+										<td class="u-text3">'+(array[i].playerLoadTime/1000).toFixed(2)+' s</td>\
+										<td class="u-text3">'+array[i].sum+'</td>\
+										<td>'+array[i].data[0].ADUin+'</td>\
+										<td>'+array[i].data[0].App+'</td>\
+										<td><div style="width:60px;word-wrap:break-word">'+array[i].data[0].Stream+'</div></td>\
+										<td>'+array[i].data[0].MPSId+'</td>\
+										<td>'+array[i].data[0].PlayDomainName+'</td>\
+										<td>'+array[i].data[0].PlayerId+'</td>\
+										<td><div style="width:240px;word-wrap:break-word"> '+array[i].data[0].Website+'</div></td>\
+										<td><a data-index='+i+' class="f-cursor u-text2 u-detail-btn">详情 </a>\
+										<a target="blank" href='+href+' class="u-text4 f-cursor"> 播放</a>\
+										</td></tr>';									
+							}
+							$(container2).html(html);
+							$(container2).parents('.table-box').siblings('.search').find('.u-sizeNum').html(' 总人数：'+sumSize);
+							$('.u-detail-btn',container2).on('click',function(){
+								var index = parseInt($(this).attr('data-index'));
+								if(array[index].data.length > 0){
+									array[index].data.sort(sortBy('Fluency',true));
+								}
+								
+								var c1 = '.g-detail-th';
+								var c2 = '.g-detail-tb';
+								var html = ' \
+										<td>ADUin</td>\
+										<td>App</td>\
+										<td>浏览器</td>\
+										<td>播放状态</td>\
+										<td>加载时间</td>\
+										<td>MPSId</td>\
+										<td>播放域名</td>\
+										<td>播放ID</td>\
+										<td>Src_Ip</td>\
+										<td>Uid</td>\
+										<td>Website</td> ';
+								$(c1).html(html);
+								var html = '';
+								for(var i = 0; i < array[index].data.length; i++){
+									html += ' <tr>\
+											<td class="u-text3">'+array[index].data[i].ADUin+'</td>\
+											<td class="u-text3">'+array[index].data[i].App+'</td>\
+											<td class="u-text3">'+array[index].data[i].BrowserType+'</td>\
+											<td class="u-text3">'+array[index].data[i].PlayStatus+'</td>\
+											<td class="u-text3">'+(array[index].data[i].PlayerLoadTime/1000).toFixed(2)+' s</td>\
+											<td class="u-text3">'+array[index].data[i].MPSId+'</td>\
+											<td class="u-text3">'+array[index].data[i].PlayDomainName+'</td>\
+											<td class="u-text3">'+array[index].data[i].PlayerId+'</td>\
+											<td class="u-text3">'+array[index].data[i].Src_Ip+'</td>\
+											<td class="u-text3">'+array[index].data[i].Uid+'</td>\
+											<td class="u-text3"><div style="width:200px;word-wrap:break-word">'+array[index].data[i].Website+'</div></td>\
+											</tr> ';
+								}
+								$(c2).html(html);
+								$('.f-detail-dialog').modal('show');
+							});
+						}
+					}
+				});
+			 }
+		
+			var update_chart = function(type,chart,colors, title, times,sum, series,legend_data,legend_width,avg_data,is_animation) {
+				if(type == 'rtmp'){
+					var formatter = '{value} s';
+					var max = null;
+				}
+				else{
+					var formatter = '{value} %';
+					var max = 100;
+				}
+				var y = {
+				        type: 'value',
+				        axisLabel : {
+				        	formatter: formatter,
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        max : max,
+				        min : 'dataMin',
+				        splitNumber : '2'
+				    };
+				var option = {
+					animation : is_animation ? is_animation : false,
+					backgroundColor: '#404a59',
+				    title: {
+				        text: title,
+				        left: 'center',
+				        top : '0%',
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    color : colors,
+				    tooltip: {
+				        trigger: 'axis',
+				        axisPointer  : {
+				        	lineStyle :{
+				        		color : '#FFF'
+				        	}
+				        },        
+						formatter: function (param) {																		
+							param = param[0];
+							if(sum.length <= 0 || typeof param == "undefined"){return '';}
+							var res = param.name+'</br>当前值：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+							return res;
+						}
+				    },
+				    legend: {
+				    	left: '9%',
+				    	width : legend_width ? legend_width : 'auto',
+				        data: legend_data,
+				        margin : [100,100],
+				        textStyle: {
+							color: '#fff'
+						}
+				    },
+				    toolbox: {
+				        show: true,
+				        right: '8%',
+				        feature: {
+				            dataZoom: {
+				                yAxisIndex: 'none'
+				            },
+								//dataView: {readOnly: false},
+								//magicType: {type: ['line', 'bar']},
+								//restore: {},
+				            saveAsImage: {}
+				        },
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    xAxis:  {
+				        type: 'category',
+				        boundaryGap: false,
+				        data: times,
+			        	axisLabel : {
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        interval : 1
+				    },
+				    yAxis: y,
+				    series: series
+				};
+				chart.setOption(option);
+			};
+			var day_options = {
+				rtmp : {},
+				hls : {}
+			};
+			var update_charts_of_day = function(type,chart,colors, title, times,sum, series,legend_data,legend_width,avg_data,is_animation,grid){				
+				if(type == 'rtmp'){
+					var formatter = '{value} s';
+					var max = null;
+				}
+				else{
+					var formatter = '{value} %';
+					var max = 100;
+				}
+				var y = {
+				        type: 'value',
+				        gridIndex: 0,
+				        axisLabel : {
+				        	formatter: formatter,
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        max : max,
+				        min : 0,
+				        splitNumber : '2',
+							//splitLine : {
+							//show : false
+							//}
+				    };
+				var day_option = {
+					animation : is_animation ? is_animation : false,
+					backgroundColor: '#404a59',
+				    title: {
+				        text: title,
+				        left: 'center',
+				        top : '0%',
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    color : colors,
+				    tooltip: {
+				        trigger: 'axis',
+				        axisPointer  : {
+				        	lineStyle :{
+				        		color : '#FFF'
+				        	}
+				        },
+						formatter: function (param) {
+							param = param[0];
+							if(sum.length <= 0 || typeof param == "undefined"){return '';}	
+							var res = param.name+'</br>当前值：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+							return res;
+						},
+				    },
+				    grid: grid,
+				    legend: {
+				    	left: '3%',
+				    	width : legend_width ? legend_width : 'auto',
+				        data: legend_data,
+				        margin : [100,100],
+				        textStyle: {
+							color: '#fff'
+						}
+				    },
+				    toolbox: {
+				        show: true,
+				        right: '8%',
+				        feature: {
+				            dataZoom: {
+				                yAxisIndex: 'none'
+				            },
+				            saveAsImage: {}
+				        },
+				        textStyle: {
+							color: '#FFF'
+						}
+				    },
+				    xAxis:  [{
+				        type: 'category',
+				        gridIndex: 0,
+				        boundaryGap: false,
+				        data: times,
+			        	axisLabel : {
+				        	textStyle : {
+								color: '#FFF'
+							}
+				        },
+				        axisLine : {
+				        	lineStyle : {
+				        		color: '#FFF'
+				        	}
+				        },
+				        interval : 1
+				    }],
+				    yAxis: [y],
+				    series: series
+				};
+				chart.setOption(day_option);
+				day_options[type] = day_option;
+			};
+			function sortBy(attr,rev){
+				//第二个参数没有传递 默认升序排列
+				if(rev ==  undefined){
+					rev = 1;
+				}else{
+					rev = (rev) ? 1 : -1;
+				}
+				
+				return function(a,b){
+					a = a[attr];
+					b = b[attr];
+					if(a < b){
+						return rev * -1;
+					}
+					if(a > b){
+						return rev * 1;
+					}
+					return 0;
+				}
+			}
+			//入口
+			$().ready(function() {
+				init();
+				$('.btn').on('click',function(){									
+					GLOBAL_FLAG = true;		
+					var option = getOption();
+					update_quality_data({time:'day',once:true,app:option.app,stream:option.stream,hourSearch:true});
+					update_quality_data({time:'minute',once:true,app:option.app,stream:option.stream,minSearch:true});		
+				});
+
+
+				var nav_rtmpRange = 0;
+				var nav_hlsRange = 0;
+				$('.nav-tabs  a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+					var option = getOption();
+					var opt = {time:'minute',once:false,app:option.app,stream:option.stream,minSearch:true};
+					var index = $('.nav-tabs li.active').index();
+				
+					if(index == 1){
+						if(nav_rtmpRange > 1){return}
+						opt.rtmpRange = true;
+						++nav_rtmpRange
+					}else if(index == 2){
+						if(nav_hlsRange > 1){return}
+						opt.hlsRange = true;
+						++nav_hlsRange
+					}
+					
+				 	update_quality_data(opt);
+				});
+			});
+		</script>
+</body>
+
+</html>
