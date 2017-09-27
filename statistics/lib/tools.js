@@ -48,7 +48,7 @@ g_funs.prototype.is_empty_obj = function(obj){
  */
 g_funs.prototype.get_json_parse = function(json_str){
     try{
-    	//console.log('json:',json_str);
+    //	console.log('json:',json_str);
    		var json = JSON.parse(json_str);
    		return json;
     }catch(e){

@@ -31,7 +31,6 @@ HttpManager.prototype.HttpPost = function(url,data,callback,time){
 		option.headers['Content-Type'] = 'application/x-www-form-urlencoded';
 		option.headers['Content-Length'] = contents.length;
 	}
-	
 	if(!callback){
 		callback = function(){};
 	}

@@ -116,29 +116,21 @@
 				login();
 			});
 			function login(){
-				//var url = 'http://127.0.0.1:8080/login';
-					var url = 'http://114.55.237.92:8080/login';
-				var json = {
+			//var url = 'http://127.0.0.1:8080/login';
+			    var url = 'http://114.55.237.92:8080/login';		
+				var json = {					
+						password: $('#inputPassword').val(),
 						email:$('#inputEmail').val(),//'zhangyuanyuan@aodiansoft.com',
-						password: $('#inputPassword').val()
-				};	
-				var __url = function(json) {
-					var url_ = url + '?';
-					for(var key in json) {
-						url_ += key + '=' + json[key] + "&";
-					}
-					url_ = url_.substr(0, url_.length - 1);			
-					return url_;
 				};
-				$.getJSON(__url(json), function(json) {
-						console.log(json.data);
+				$.post(url ,JSON.stringify( json ), function(json) {
+						var json = json;
 						if(json.data.Flag == 100){
 						location.href="/quality_true.html";
 
 						}else{
 							$('.login-alert').modal();
 						}
-				});
+				},"json");
 			}
 			
 		})

@@ -21,10 +21,9 @@
 
 //let require******************************************
 var mq = require("./mq").mq(config.mq);
-var playerInfo_mq = require("./mq").mq(config.playerInfo_mq);
+//var playerInfo_mq = require("./mq").mq(config.playerInfo_mq);
 var http_server = require('./lib/http_server').New(config.http);//http svr
 var summary = require('./summary.js').New();
-var playerSummary = require('./playerSummary.js').New();
 
 //event******************************************
 //proess quit******************************************
@@ -107,6 +106,7 @@ function encode(key,plaintext,iv) {
 //http_svr
 var g_data = null;
 http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
+		
 	var data = tools.get_json_parse(msg);
 	if(!data){
 		log.warn('http server deal_msg get_json_parse err:'+msg+', req_ip:'+req_ip);
@@ -128,15 +128,12 @@ http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
 			break;
 		case '/login':				
 			var u_email  = data.email;
-			var u_password  = data.password;//接收用户名密码
+			var u_password  = data.password;//接收用户名密码			
 			var callme = {Flag:110,FlagString:'登录失败',data:{}};
-
 
 			var str = u_password;
 			var md5 = require("md5");
-			var u_md5password = md5(str);//密码md5加密
-		
-
+			var u_md5password = md5(str);//密码md5加密	
 
 			var key = 'JFswrLIT';
 			var str = '{"Tag":"login","email":"'+u_email+'","password":"'+u_md5password+'","Api":"admin\/account"}';
@@ -207,9 +204,9 @@ http_server.on('deal_msg', function(path,msg,req_ip,req,resp,callback) {
 			res.data = summary.get_rtmp_flu_range_for_app_stream_minitue();
 			break;
 		case '/get_mps_summary':
-			req.cookies = parseCookie(req.headers.cookie);		
-
-			if(req.cookies.isVisit == null || req.cookies.isVisit != 1){
+			req.cookies = parseCookie(req.headers.cookie);
+		
+			if(req.cookies == null || req.cookies.isVisit != 1){
 				var callmes = {Flag:120,FlagString:'请登录',data:{}};
 				res.data = callmes;
 				break;

@@ -110,7 +110,8 @@ http_server.prototype.start = function(){
                 postData += data.toString();
             });
             req.on("end", function () {
-            	self.emit('deal_msg',pathname,postData,req_ip,function(data,code,bfile){
+            	self.emit('deal_msg',pathname,postData,req_ip,req,resp,function(data,code,bfile){
+					
 					if(bfile){
 						resp.writeHead(200, {
 							'Content-Type': t?self.types[t]:"text/plain",

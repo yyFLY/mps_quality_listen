@@ -97,8 +97,8 @@
 			GLOBAL_FLAG = false;//是否带条件查询
 			GLOBAL_RangeSearch_FLAG = true;//是否更新表格
 
-			//	var url = 'http://127.0.0.1:8080/get_mps_summary';
-				var url = 'http://114.55.237.92:8080/get_mps_summary';
+				var url = 'http://127.0.0.1:8080/get_mps_summary';
+			//	var url = 'http://114.55.237.92:8080/get_mps_summary';
 			
 			
 			var __url = function(json) {
@@ -233,7 +233,7 @@
 					json.hlsRange = hlsRange;
 				}
 				$.getJSON(__url(json), function(json) {	console.log(json.data);
-					if(json.data.Flag != 100){
+					if(json.data == null || json.data.Flag != 100){
 						location.href="/login.html"
 						return; 
 					}				
