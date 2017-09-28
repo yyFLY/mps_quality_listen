@@ -9,18 +9,21 @@
 		<meta name="author" content="">
 		<link href="css/bootstrap.min.css" type="text/css" rel="stylesheet"></link>
 		<link href="css/index.css" type="text/css" rel="stylesheet"></link>
+		<link href="plugin/icoroll/icoroll.css" type="text/css" rel="stylesheet"></link>
+		<link href="plugin/icoroll/font.css" type="text/css" rel="stylesheet"></link>
 		<title>质量监控</title>
 		<style>
 			.hide{display:none}
 		</style>
-		<script type="text/javascript" src="js/echarts.min.js"></script>
 	</head>
 
 	<body style="background-color: #404a59;">
-		<div>
+		
+		<div  class="back-to-top"><a href="#nav-top"></a></div>
+		<div >
 
 			<!-- Nav tabs -->
-			<ul class="nav nav-tabs" role="tablist">
+			<ul id="nav-top" class="nav nav-tabs" role="tablist">
 				<li role="presentation" class="active"><a href="#tab1" aria-controls="tab1" role="tab" data-toggle="tab">播放器加载成功率曲线</a></li>
 				<li role="presentation" class="hide"><a href="#tab2" aria-controls="tab2" role="tab" data-toggle="tab">HLS加载时间播放器加载成功率排行</a></li>
 				<li role="presentation"><a href="#tab3" aria-controls="tab3" role="tab" data-toggle="tab">HLS播放器加载成功率排行</a></li>
@@ -93,12 +96,16 @@
 		</div><!-- /.modal -->
 		<script src="js/jquery.min.js"></script>
 		<script src="js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/echarts.min.js"></script>
+		<script type="text/javascript" src="plugin/icoroll/icoroll.js"></script>
 		<script type="text/javascript">
+		
+		
 			GLOBAL_FLAG = false;//是否带条件查询
 			GLOBAL_RangeSearch_FLAG = true;//是否更新表格
 
-			//	var url = 'http://127.0.0.1:8080/get_player_fluency_record';
-				var url = 'http://114.55.237.92:8080/get_player_fluency_record';
+	//	var url = 'http://127.0.0.1:8080/get_player_fluency_record';
+		var url = 'http://114.55.237.92:8080/get_player_fluency_record';
 			
 			
 			var __url = function(json) {
@@ -173,7 +180,7 @@
 				icon : 'circle'
 			}];
 			var hls_legend_data = [{
-				name : '播放器加载成功率(单位：%)',
+				name : '当前值(单位：%)',
 				icon : 'circle'
 			},{
 				name : '在线总数',
@@ -181,7 +188,7 @@
 			}];
 			
 			var all_legend_data = [{
-				name : '播放器加载时间(单位：s)',
+				name : '当前值(单位：s)',
 				icon : 'circle'
 			}];
 			
@@ -419,8 +426,8 @@
 									legend: {
 										formatter : function(name){
 											switch (name){
-												case '播放器加载成功率':
-													return '播放器加载成功率 | '+avg_data[0];
+												case '当前值':
+													return '当前值 | '+avg_data[0];
 												default :
 													return '未知';
 											}
@@ -464,7 +471,7 @@
 											var sum = hlsSum;
 											param = param[0];
 											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
-											var res = param.name+'</br>播放器加载成功率：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											var res = param.name+'</br>当前值：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
 											return res;
 										},
 									},
@@ -483,8 +490,8 @@
 									legend: {
 										formatter : function(name){
 											switch (name){
-												case '播放器加载成功率':
-													return '播放器加载成功率 | '+avg_data[0]+'%';
+												case '当前值':
+													return '当前值 | '+avg_data[0]+'%';
 												default :
 													return '未知';
 											}
@@ -503,7 +510,7 @@
 											var sum = rtmpSum;
 											param = param[0];
 											if(sum.length <= 0 || typeof param == "undefined"){return '';}	
-											var res = param.name+'</br>播放器加载成功率：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											var res = param.name+'</br>当前值：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
 											return  res;
 										},
 									},
@@ -514,8 +521,8 @@
 									legend: {
 										formatter : function(name){
 											switch (name){
-												case '播放器加载成功率':
-													return '播放器加载成功率 | '+avg_data[0]+'%';
+												case '当前值':
+													return '当前值 | '+avg_data[0]+'%';
 												default :
 													return '未知';
 											}
@@ -532,7 +539,7 @@
 											var sum = hlsSum;	
 											param = param[0];
 											if(sum.length <= 0 || typeof param == "undefined"){return '';}
-											var res = param.name+'</br>播放器加载成功率：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
+											var res = param.name+'</br>当前值：'+param.data+'</br>统计总数：'+sum[param.dataIndex];
 											return  res;
 										},
 									},
@@ -548,7 +555,7 @@
 							var array = array ;
 							var html = ' \
 											<td>播放器加载成功率</td>\
-											<td>评价加载时间</td>\
+											<td>播放器加载时间</td>\
 											<td>人数</td>\
 											<td>奥点ID</td>\
 											<td>App</td>\
@@ -572,7 +579,7 @@
 								sumSize += parseInt(array[i].sum) ;
 								html += ' <tr>\
 										<td class="u-text3">'+(array[i].successSum*100).toFixed(2)+'%</td>\
-										<td class="u-text3">'+(array[i].playerLoadTime/1000).toFixed(2)+' s</td>\
+										<td class="u-text3">'+(array[i].playerLoadTime)+' s</td>\
 										<td class="u-text3">'+array[i].sum+'</td>\
 										<td>'+array[i].data[0].ADUin+'</td>\
 										<td>'+array[i].data[0].App+'</td>\
@@ -601,6 +608,8 @@
 										<td>浏览器</td>\
 										<td>播放状态</td>\
 										<td>加载时间</td>\
+										<td>已缓冲时间</td>\
+										<td>播放启动时间</td>\
 										<td>MPSId</td>\
 										<td>播放域名</td>\
 										<td>播放ID</td>\
@@ -616,6 +625,8 @@
 											<td class="u-text3">'+array[index].data[i].BrowserType+'</td>\
 											<td class="u-text3">'+array[index].data[i].PlayStatus+'</td>\
 											<td class="u-text3">'+(array[index].data[i].PlayerLoadTime/1000).toFixed(2)+' s</td>\
+											<td class="u-text3">'+(array[index].data[i].Buffered/1000).toFixed(2)+' s</td>\
+											<td class="u-text3">'+(array[index].data[i].PlayStartupTime/1000).toFixed(2)+' s</td>\
 											<td class="u-text3">'+array[index].data[i].MPSId+'</td>\
 											<td class="u-text3">'+array[index].data[i].PlayDomainName+'</td>\
 											<td class="u-text3">'+array[index].data[i].PlayerId+'</td>\
@@ -886,6 +897,24 @@
 					
 				 	update_quality_data(opt);
 				});
+			});
+
+
+			$(function(){
+				
+				icoroll({
+					links:$('.scroll'),
+					tip_distance:30,
+					back_enabled:true,
+					time:1500
+				},{
+					position:'right',
+					elements:[
+					{ 'class':'icon-stats','href':'./quality_true.html','content':'流畅度'},
+					{ 'class':'icon-bars','href':'./player_quality_true.html','content':'成功率'}
+					]
+				});
+				
 			});
 		</script>
 </body>

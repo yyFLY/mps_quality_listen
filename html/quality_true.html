@@ -9,18 +9,19 @@
 		<meta name="author" content="">
 		<link href="css/bootstrap.min.css" type="text/css" rel="stylesheet"></link>
 		<link href="css/index.css" type="text/css" rel="stylesheet"></link>
+		<link href="plugin/icoroll/icoroll.css" type="text/css" rel="stylesheet"></link>
+		<link href="plugin/icoroll/font.css" type="text/css" rel="stylesheet"></link>
 		<title>质量监控</title>
 		<style>
-		
 		</style>
-		<script type="text/javascript" src="js/echarts.min.js"></script>
 	</head>
 
 	<body style="background-color: #404a59;">
+		<div  class="back-to-top"><a href="#nav-top"></a></div>
 		<div>
 
 			<!-- Nav tabs -->
-			<ul class="nav nav-tabs" role="tablist">
+			<ul class="nav nav-tabs" id="nav-top" role="tablist">
 				<li role="presentation" class="active"><a href="#tab1" aria-controls="tab1" role="tab" data-toggle="tab">流畅度曲线</a></li>
 				<li role="presentation"><a href="#tab2" aria-controls="tab2" role="tab" data-toggle="tab">RTMP流畅度排行</a></li>
 				<li role="presentation"><a href="#tab3" aria-controls="tab3" role="tab" data-toggle="tab">HLS流畅度排行</a></li>
@@ -93,6 +94,8 @@
 		</div><!-- /.modal -->
 		<script src="js/jquery.min.js"></script>
 		<script src="js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/echarts.min.js"></script>		
+		<script type="text/javascript" src="plugin/icoroll/icoroll.js"></script>
 		<script type="text/javascript">
 			GLOBAL_FLAG = false;//是否带条件查询
 			GLOBAL_RangeSearch_FLAG = true;//是否更新表格
@@ -866,6 +869,22 @@
 					
 				 	update_quality_data(opt);
 				});
+			});
+			$(function(){
+				
+				icoroll({
+					links:$('.scroll'),
+					tip_distance:30,
+					back_enabled:true,
+					time:1500
+				},{
+					position:'right',
+					elements:[
+					{ 'class':'icon-stats','href':'./quality_true.html','content':'流畅度'},
+					{ 'class':'icon-bars','href':'./player_quality_true.html','content':'成功率'},
+					]
+				});
+				
 			});
 		</script>
 </body>

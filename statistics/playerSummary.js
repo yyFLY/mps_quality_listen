@@ -562,13 +562,13 @@ var playerSummary = function(config){
 	self.get_rtmp_flu_range_for_app_stream_minitue = function(){
 		var para = self.lastminitue_rtmp_summary_minitue;
 		var array = getArrayForMinitue(para);
-		return array.sort(compare('PlayerLoadTime'));
+		return array.sort(compare('successSum'));
 	}
 	self.get_hls_flu_range_for_app_stream_minitue = function(){
 		var para = self.lastminitue_hls_summary_minitue;
 	
 		var array = getArrayForMinitue(para);
-		return array.sort(compare('PlayerLoadTime'));
+		return array.sort(compare('successSum'));
 	}
 	function getArrayForMinitue(para){
 		var array = [];

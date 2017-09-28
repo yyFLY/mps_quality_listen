@@ -349,7 +349,7 @@ playerInfo_mq.on('deal_poll_msg',function(msg){
 		return;
 	}
 	var data = tools.get_json_parse(msg.body);
-	
+	util.log(data);
 	if(!data){
 		log.warn('playerInfo_mq deal_msg get_json_parse err, msg:'+msg.body);
 		return;
